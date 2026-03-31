@@ -1,6 +1,10 @@
-# CLAUDE.md
+# AGENTS.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project
+
+**Site Diagnostics** — blackbox performance and SEO diagnostics for storefronts and high-traffic websites, built as an MCP App on deco. The agent tests from the outside (no CDN/server access) using tools like `fetch_page`, `capture_har`, `lighthouse_audit`, `render_page`, and `screenshot`.
 
 ## Commands
 
@@ -19,13 +23,22 @@ bun test <file>      # Run a single test file
 
 ## Architecture
 
-This is an **MCP App template** — it builds interactive UIs for MCP (Model Context Protocol) tools. A single unified HTML bundle is built and served as an MCP resource, with runtime routing to the correct tool UI based on the `toolName` from the MCP host context.
+This is an **MCP App** — it builds interactive UIs for MCP (Model Context Protocol) tools. A single unified HTML bundle is built and served as an MCP resource, with runtime routing to the correct tool UI based on the `toolName` from the MCP host context.
 
-### Two-Layer Structure
+### Three-Layer Structure
 
-**API Server (`api/`)** — Bun HTTP server using `@decocms/runtime`. Defines MCP tools and resources, exposes them at `/api/mcp` via SSE.
+**Shared (`shared/`)** — Code shared between API and Web. Contains `diagnostics.ts` with the `SITE_DIAGNOSTICS_INSTRUCTIONS` prompt and `buildDiagnoseMessage()` helper, ensuring both the `/diagnose` prompt and the web UI send the same text.
+
+**API Server (`api/`)** — Bun HTTP server using `@decocms/runtime`. Defines MCP tools, prompts, and resources, exposes them at `/api/mcp` via SSE.
+
+- `api/tools/` — Tool definitions: `diagnose`, `fetch-page`, `capture-har`, `lighthouse`, `render-page`, `screenshot`
+- `api/prompts/site-diagnostics.ts` — The `/diagnose` prompt (uses `shared/diagnostics.ts`)
+- `api/resources/diagnose.ts` — Serves the built HTML as an MCP App resource
 
 **React UI (`web/`)** — React 19 app using `@modelcontextprotocol/ext-apps` SDK. Connects to the MCP host, receives tool input/results, and renders interactive UI.
+
+- `web/tools/diagnostics/` — The diagnostics tool UI (URL input form, sends `buildDiagnoseMessage()` via `sendMessage`)
+- `web/router.tsx` — `TOOL_PAGES` registry mapping tool IDs to page components
 
 ### Tool Build Pipeline
 

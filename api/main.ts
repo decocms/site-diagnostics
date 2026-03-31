@@ -1,8 +1,12 @@
+import { readFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
 import { withRuntime } from "@decocms/runtime";
 import { prompts } from "./prompts/index.ts";
-import { helloAppResource } from "./resources/hello.ts";
+import { diagnoseAppResource } from "./resources/diagnose.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
+
+const SCREENSHOTS_DIR = resolve(join(import.meta.dir, "../data/screenshots"));
 
 // biome-ignore lint/suspicious/noExplicitAny: runtime.fetch signature compatibility
 type Fetcher = (req: Request, ...args: any[]) => Response | Promise<Response>;
@@ -42,7 +46,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
 	},
 	tools,
 	prompts,
-	resources: [helloAppResource],
+	resources: [diagnoseAppResource],
 });
 
 function withLogging(fetcher: Fetcher): Fetcher {
@@ -78,11 +82,33 @@ function withLogging(fetcher: Fetcher): Fetcher {
 }
 
 function withMcpApiRoute(fetcher: Fetcher): Fetcher {
-	return (req: Request, ...args) => {
+	return async (req: Request, ...args) => {
 		const url = new URL(req.url);
 
 		if (url.pathname === "/mcp" || url.pathname.startsWith("/mcp/")) {
 			return new Response("Not Found", { status: 404 });
+		}
+
+		// Serve screenshots as static files
+		if (url.pathname.startsWith("/api/screenshots/") && req.method === "GET") {
+			const filename = url.pathname.slice("/api/screenshots/".length);
+			// Sanitize: only allow safe filename chars
+			if (!/^[a-zA-Z0-9._-]+\.png$/.test(filename)) {
+				return new Response("Not Found", { status: 404 });
+			}
+			const filePath = join(SCREENSHOTS_DIR, filename);
+			// Path traversal check
+			if (!resolve(filePath).startsWith(SCREENSHOTS_DIR)) {
+				return new Response("Not Found", { status: 404 });
+			}
+			try {
+				const data = await readFile(filePath);
+				return new Response(data, {
+					headers: { "content-type": "image/png" },
+				});
+			} catch {
+				return new Response("Not Found", { status: 404 });
+			}
 		}
 
 		if (url.pathname === "/api/mcp" || url.pathname.startsWith("/api/mcp/")) {
