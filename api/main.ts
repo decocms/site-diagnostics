@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { withRuntime } from "@decocms/runtime";
 import { prompts } from "./prompts/index.ts";
-import { helloAppResource } from "./resources/hello.ts";
+import { diagnoseAppResource } from "./resources/diagnose.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
 
@@ -46,7 +46,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
 	},
 	tools,
 	prompts,
-	resources: [helloAppResource],
+	resources: [diagnoseAppResource],
 });
 
 function withLogging(fetcher: Fetcher): Fetcher {

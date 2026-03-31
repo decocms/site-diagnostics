@@ -19,6 +19,6 @@
 			"@/*": ["./web/*"]
 		}
 	},
-	"include": ["api/**/*", "web/**/*"],
+	"include": ["api/**/*", "web/**/*", "shared/**/*"],
 	"exclude": ["node_modules", "dist"]
 }
