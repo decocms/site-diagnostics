@@ -1,13 +1,13 @@
-name: CI
+name: Deploy (Production)
 
 on:
-  pull_request:
+  workflow_dispatch:
   push:
     branches:
       - main
 
 jobs:
-  check:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -35,3 +35,19 @@ jobs:
 
       - name: Type check
         run: bun run check
+
+      - name: Build
+        run: bun run build
+
+      - name: Publish to Mesh Registry
+        run: bun scripts/publish.ts
+        env:
+          CI_CD_PIPELINE: ${{ secrets.CI_CD_PIPELINE }}
+
+      - name: Notify success
+        if: success()
+        run: echo "Successfully deployed site-diagnostics to production"
+
+      - name: Notify failure
+        if: failure()
+        run: echo "Deployment failed for site-diagnostics"
