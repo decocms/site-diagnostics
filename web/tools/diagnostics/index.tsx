@@ -35,8 +35,12 @@ export default function DiagnosticsPage() {
 		<div className="flex items-center justify-center min-h-dvh p-6">
 			<div className="flex flex-col items-center gap-6 w-full max-w-md">
 				<div className="flex flex-col items-center gap-1 text-center">
-					<h1 className="text-2xl font-bold tracking-tight">Site Diagnostics</h1>
-					<p className="text-sm text-muted-foreground">Performance &amp; SEO analysis</p>
+					<h1 className="text-2xl font-bold tracking-tight">
+						Site Diagnostics
+					</h1>
+					<p className="text-sm text-muted-foreground">
+						Performance &amp; SEO analysis
+					</p>
 				</div>
 
 				<div className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-500 p-px rounded-xl w-full">
@@ -58,9 +62,10 @@ export default function DiagnosticsPage() {
 							disabled={sending || !url.trim()}
 							className="w-full text-white"
 							style={{
-								background: sending || !url.trim()
-									? undefined
-									: "linear-gradient(to right, #34d399, #22d3ee, #a855f7)",
+								background:
+									sending || !url.trim()
+										? undefined
+										: "linear-gradient(to right, #34d399, #22d3ee, #a855f7)",
 							}}
 						>
 							{sending ? "Running..." : "Diagnose"}
