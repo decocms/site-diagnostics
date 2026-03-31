@@ -7,7 +7,6 @@
  *   bun scripts/publish.ts [--dry-run]
  *
  * Environment:
- *   CI_CD_PIPELINE  - Bearer token for the mesh registry
  *   MESH_ADMIN_URL  - Override the publish URL
  */
 
@@ -142,19 +141,12 @@ async function main() {
 		return;
 	}
 
-	const token = process.env.CI_CD_PIPELINE;
-	if (!token) {
-		console.error("❌ CI_CD_PIPELINE env var is required");
-		process.exit(1);
-	}
-
 	console.log("🚀 Publishing to mesh registry...");
 
 	const res = await fetch(PUBLISH_URL, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${token}`,
 		},
 		body: JSON.stringify(payload),
 	});

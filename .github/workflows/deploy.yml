@@ -41,8 +41,6 @@ jobs:
 
       - name: Publish to Mesh Registry
         run: bun scripts/publish.ts
-        env:
-          CI_CD_PIPELINE: ${{ secrets.CI_CD_PIPELINE }}
 
       - name: Notify success
         if: success()
