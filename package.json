@@ -1,7 +1,7 @@
 {
-	"name": "mcp-app",
+	"name": "site-diagnostics",
 	"version": "0.1.0",
-	"description": "MCP App template for deco — starter for building MCP Apps with interactive UIs",
+	"description": "Blackbox performance and SEO diagnostics for storefronts and high-traffic websites",
 	"private": true,
 	"type": "module",
 	"scripts": {

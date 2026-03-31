@@ -1,8 +1,8 @@
 {
 	"scopeName": "deco",
-	"name": "mcp-app",
-	"friendlyName": "MCP App Template",
-	"description": "Starter template for building MCP Apps on deco with interactive UIs.",
+	"name": "site-diagnostics",
+	"friendlyName": "Site Diagnostics",
+	"description": "Blackbox performance and SEO diagnostics for storefronts and high-traffic websites.",
 	"icon": "",
 	"connection": {
 		"type": "HTTP",
@@ -17,7 +17,7 @@
 	"metadata": {
 		"categories": [],
 		"official": false,
-		"tags": ["template", "mcp-app"],
-		"short_description": "Starter template for MCP Apps on deco."
+		"tags": ["diagnostics", "performance", "seo"],
+		"short_description": "Blackbox performance and SEO diagnostics for websites."
 	}
 }
