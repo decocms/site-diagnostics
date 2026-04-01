@@ -13,33 +13,6 @@ ALWAYS normalize user-provided URLs before passing to any tool:
 - Ensure the URL has a valid protocol before calling ANY tool
 </url-normalization>
 
-<browser-setup>
-Browser tools (capture_har, screenshot, render_page, lighthouse_audit) need a browser.
-Before starting any diagnostic, check if browser tools are available by calling screenshot
-on a simple test URL (e.g. https://example.com). If it fails with "No browser available", ASK the user:
-
-"I need a browser to run full diagnostics. Two options:
-
-**Option A — Browserless (recommended for full features)**
-Set BROWSERLESS_TOKEN in your .env file. Get a token at https://browserless.io
-This enables ALL tools including Lighthouse Core Web Vitals audits.
-
-**Option B — Local Playwright (free, no account needed)**
-I'll install Chromium locally. This enables ALL tools: capture_har, screenshot, render_page,
-and lighthouse_audit (via the lighthouse CLI).
-
-Which do you prefer?"
-
-If the user chooses Option A: guide them to set the env var, then retry.
-If the user chooses Option B: run these commands via Bash:
-  npx playwright install chromium
-Then also install lighthouse for local CWV audits:
-  npm install -g lighthouse
-After install, retry the browser tools — they auto-detect the Chromium binary.
-
-Note: fetch_page ALWAYS works (no browser needed) — use it for quick checks while setting up.
-</browser-setup>
-
 <tools>
 You have five native tools. Call them directly.
 
