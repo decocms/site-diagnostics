@@ -55,4 +55,3 @@ bun run ci:check     # Biome lint + format check
 - **Styling**: [Tailwind CSS](https://tailwindcss.com) v4
 - **MCP Apps**: [@modelcontextprotocol/ext-apps](https://www.npmjs.com/package/@modelcontextprotocol/ext-apps) SDK
 - **Build**: [Vite](https://vitejs.dev) + [vite-plugin-singlefile](https://github.com/nickreese/vite-plugin-singlefile)
-
