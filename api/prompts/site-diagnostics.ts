@@ -6,7 +6,7 @@ import type { Env } from "../types/env.ts";
 export const siteDiagnosticsPrompt = (_env: Env) =>
 	createPublicPrompt({
 		name: "diagnose",
-		title: "Site Diagnostics",
+		title: "Run Site Diagnostics",
 		description:
 			"Run a comprehensive performance, SEO, and cache diagnostic on a website URL",
 		argsSchema: {
