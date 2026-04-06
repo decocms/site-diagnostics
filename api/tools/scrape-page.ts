@@ -106,8 +106,8 @@ export const scrapePageTool = (_env: Env) =>
 						favicon: result.metadata.favicon,
 						ogSiteName: result.metadata.ogSiteName,
 						language: Array.isArray(result.metadata.language)
-						? result.metadata.language[0]
-						: result.metadata.language || undefined,
+							? result.metadata.language[0]
+							: result.metadata.language || undefined,
 					},
 					branding,
 				};
