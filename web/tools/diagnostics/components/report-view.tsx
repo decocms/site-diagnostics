@@ -167,7 +167,7 @@ export function ReportView({ diagnostic, onBack }: ReportViewProps) {
 			if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
 
 			const rect = link.getBoundingClientRect();
-			const containerRect = el?.getBoundingClientRect();
+			const containerRect = el!.getBoundingClientRect();
 			setTooltip({
 				text: text.length > 280 ? `${text.slice(0, 277)}...` : text,
 				x: rect.left - containerRect.left + rect.width / 2,

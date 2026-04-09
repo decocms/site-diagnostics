@@ -240,7 +240,7 @@ Use sub-agents for ALL tool calls — spawn them in parallel within each phase.
 
 PHASE 0 — BUSINESS INTELLIGENCE & SITE DISCOVERY (parallel, ~10 seconds)
 
-Spawn 5+ sub-agents in ONE message, one per tool call:
+Spawn 6+ sub-agents in ONE message, one per tool call:
   1. crawl_site(url, maxPages: 500)
   2. research_business(companyName, domain, category) ← infer company name from domain
   3. fetch_page("{site}/sitemap.xml", extractLinks: false, maxBodyKB: 512)
@@ -248,7 +248,7 @@ Spawn 5+ sub-agents in ONE message, one per tool call:
   5. fetch_page("{site}/robots.txt", extractLinks: false, maxBodyKB: 1)
   6. research_content(brandName, domain, category) ← editorial content discovery
 
-Wait for all 5 to complete, then:
+Wait for all 6 to complete, then:
 
 **Establish the SITE INVENTORY ANCHOR:**
   From crawl_site results, record these numbers — they become the denominators for ALL

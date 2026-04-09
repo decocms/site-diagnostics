@@ -315,8 +315,20 @@ export default function DiagnosticsPage() {
 		);
 	}
 
+	if (view.type === "loading") {
+		return (
+			<LoadingState
+				url={view.url}
+				onBack={() => {
+					refreshHistory();
+					setView({ type: "home" });
+				}}
+			/>
+		);
+	}
+
 	const hasHistory = diagnostics.length > 0;
-	const showContent = hasHistory || view.type === "loading";
+	const showContent = hasHistory;
 
 	return (
 		<div className="h-dvh overflow-y-auto">
@@ -355,7 +367,7 @@ export default function DiagnosticsPage() {
 					<div className="w-full max-w-sm">
 						<UrlForm
 							onSubmit={handleSubmit}
-							disabled={view.type === "loading"}
+							disabled={false}
 						/>
 					</div>
 
@@ -366,31 +378,25 @@ export default function DiagnosticsPage() {
 			</div>
 
 			{/* Content */}
-			{view.type === "loading" ? (
-				<div className="px-5 pb-8 max-w-lg mx-auto">
-					<LoadingState url={view.url} />
-				</div>
-			) : (
-				hasHistory && (
-					<div className="px-5 pb-8">
-						<div className="mb-3">
-							<p className="text-xs font-medium text-muted-foreground">
-								Recent Diagnostics
-							</p>
-						</div>
-						{loadingHistory ? (
-							<div className="flex items-center justify-center py-8">
-								<span className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
-							</div>
-						) : (
-							<HistoryList
-								diagnostics={diagnostics}
-								onSelect={loadDiagnostic}
-								onDelete={deleteDiagnostic}
-							/>
-						)}
+			{hasHistory && (
+				<div className="px-5 pb-8">
+					<div className="mb-3">
+						<p className="text-xs font-medium text-muted-foreground">
+							Recent Diagnostics
+						</p>
 					</div>
-				)
+					{loadingHistory ? (
+						<div className="flex items-center justify-center py-8">
+							<span className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
+						</div>
+					) : (
+						<HistoryList
+							diagnostics={diagnostics}
+							onSelect={loadDiagnostic}
+							onDelete={deleteDiagnostic}
+						/>
+					)}
+				</div>
 			)}
 		</div>
 	);
