@@ -365,10 +365,7 @@ export default function DiagnosticsPage() {
 					</div>
 
 					<div className="w-full max-w-sm">
-						<UrlForm
-							onSubmit={handleSubmit}
-							disabled={false}
-						/>
+						<UrlForm onSubmit={handleSubmit} disabled={false} />
 					</div>
 
 					{loadingHistory && !hasHistory && (

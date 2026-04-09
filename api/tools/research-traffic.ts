@@ -137,7 +137,11 @@ export const researchTrafficTool = (_env: Env) =>
 
 			try {
 				const items = await runActor<
-					{ urls: string[]; include_similar_sites: boolean; include_indepth_data: boolean },
+					{
+						urls: string[];
+						include_similar_sites: boolean;
+						include_indepth_data: boolean;
+					},
 					SimilarwebItem
 				>("radeance/similarweb-scraper", {
 					urls,

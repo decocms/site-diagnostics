@@ -161,9 +161,7 @@ export function LoadingState({ url, onBack }: LoadingStateProps) {
 						height={16}
 						className="size-4 rounded-sm shrink-0"
 					/>
-					<span className="text-sm font-medium tracking-tight">
-						{domain}
-					</span>
+					<span className="text-sm font-medium tracking-tight">{domain}</span>
 				</div>
 
 				<p className="text-sm text-muted-foreground">Analyzing...</p>

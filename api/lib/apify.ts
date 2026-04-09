@@ -2,7 +2,8 @@ const BASE_URL = "https://api.apify.com/v2";
 
 function getApiToken(): string {
 	const token = process.env.APIFY_API_TOKEN;
-	if (!token) throw new Error("APIFY_API_TOKEN environment variable is required");
+	if (!token)
+		throw new Error("APIFY_API_TOKEN environment variable is required");
 	return token;
 }
 
