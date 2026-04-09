@@ -11,6 +11,7 @@ import { renderPageTool } from "./render-page.ts";
 import { researchBusinessTool } from "./research-business.ts";
 import { researchKeywordsTool } from "./research-keywords.ts";
 import { researchSerpTool } from "./research-serp.ts";
+import { researchTrafficTool } from "./research-traffic.ts";
 import { saveDiagnosticTool } from "./save-diagnostic.ts";
 import { scrapePageTool } from "./scrape-page.ts";
 import { screenshotTool } from "./screenshot.ts";
@@ -27,6 +28,7 @@ export const tools = [
 	researchSerpTool,
 	researchKeywordsTool,
 	researchBusinessTool,
+	researchTrafficTool,
 	scrapePageTool,
 	saveDiagnosticTool,
 	listDiagnosticsTool,

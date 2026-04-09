@@ -105,12 +105,18 @@ export const screenshotTool = (_env: Env) =>
 				await mkdir(dirname(filePath), { recursive: true });
 				await writeFile(filePath, buf);
 
+				const port = process.env.PORT ? Number(process.env.PORT) : 3001;
+				const worktreeSlug = process.env.WORKTREE_SLUG;
+				const serverBase = worktreeSlug
+					? `http://${worktreeSlug}.localhost`
+					: `http://localhost:${port}`;
+
 				return {
 					url,
 					device,
 					sizeKB: Math.round(buf.length / 1024),
 					savedTo: filePath,
-					imageUrl: `/api/screenshots/${filename}`,
+					imageUrl: `${serverBase}/api/screenshots/${filename}`,
 				};
 			} catch (error) {
 				const msg = error instanceof Error ? error.message : String(error);
