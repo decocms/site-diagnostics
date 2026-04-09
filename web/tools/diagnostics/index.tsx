@@ -24,78 +24,137 @@ function ReportSkeleton() {
 			aria-hidden
 			style={{
 				maskImage: "linear-gradient(to bottom, black 0%, transparent 85%)",
-				WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 85%)",
+				WebkitMaskImage:
+					"linear-gradient(to bottom, black 0%, transparent 85%)",
 			}}
 		>
-		{/* Animated border beam */}
-		<svg
-			className="absolute inset-0 pointer-events-none"
-			style={{ width: "100%", height: "100%", overflow: "visible" }}
-			fill="none"
-		>
-			{/* leading fade */}
-			<rect x="0" y="0" rx="12" stroke="#14b8a6" strokeOpacity="0.2" strokeWidth="1" strokeDasharray="6 94" pathLength="100" style={{ width: "100%", height: "100%", animation: "border-dash-l1 4s linear infinite" }} />
-			{/* main beam */}
-			<rect x="0" y="0" rx="12" stroke="#14b8a6" strokeOpacity="0.55" strokeWidth="1" strokeDasharray="10 90" pathLength="100" style={{ width: "100%", height: "100%", animation: "border-dash 4s linear infinite" }} />
-			{/* trailing fades */}
-			<rect x="0" y="0" rx="12" stroke="#14b8a6" strokeOpacity="0.3" strokeWidth="1" strokeDasharray="8 92" pathLength="100" style={{ width: "100%", height: "100%", animation: "border-dash-t1 4s linear infinite" }} />
-			<rect x="0" y="0" rx="12" stroke="#14b8a6" strokeOpacity="0.12" strokeWidth="1" strokeDasharray="5 95" pathLength="100" style={{ width: "100%", height: "100%", animation: "border-dash-t2 4s linear infinite" }} />
-		</svg>
+			{/* Animated border beam */}
+			<svg
+				aria-hidden="true"
+				className="absolute inset-0 pointer-events-none"
+				style={{ width: "100%", height: "100%", overflow: "visible" }}
+				fill="none"
+			>
+				{/* leading fade */}
+				<rect
+					x="0"
+					y="0"
+					rx="12"
+					stroke="#14b8a6"
+					strokeOpacity="0.2"
+					strokeWidth="1"
+					strokeDasharray="6 94"
+					pathLength="100"
+					style={{
+						width: "100%",
+						height: "100%",
+						animation: "border-dash-l1 4s linear infinite",
+					}}
+				/>
+				{/* main beam */}
+				<rect
+					x="0"
+					y="0"
+					rx="12"
+					stroke="#14b8a6"
+					strokeOpacity="0.55"
+					strokeWidth="1"
+					strokeDasharray="10 90"
+					pathLength="100"
+					style={{
+						width: "100%",
+						height: "100%",
+						animation: "border-dash 4s linear infinite",
+					}}
+				/>
+				{/* trailing fades */}
+				<rect
+					x="0"
+					y="0"
+					rx="12"
+					stroke="#14b8a6"
+					strokeOpacity="0.3"
+					strokeWidth="1"
+					strokeDasharray="8 92"
+					pathLength="100"
+					style={{
+						width: "100%",
+						height: "100%",
+						animation: "border-dash-t1 4s linear infinite",
+					}}
+				/>
+				<rect
+					x="0"
+					y="0"
+					rx="12"
+					stroke="#14b8a6"
+					strokeOpacity="0.12"
+					strokeWidth="1"
+					strokeDasharray="5 95"
+					pathLength="100"
+					style={{
+						width: "100%",
+						height: "100%",
+						animation: "border-dash-t2 4s linear infinite",
+					}}
+				/>
+			</svg>
 
-		<div
-			className="space-y-8"
-			style={{
-				maskImage: "linear-gradient(to bottom, black 0%, transparent 40%)",
-				WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 40%)",
-			}}
-		>
-			{/* Title */}
-			<div className="space-y-3">
-				<div className="h-4 w-2/3 rounded-full bg-foreground/[0.07]" />
-				<div className="h-3 w-2/5 rounded-full bg-foreground/[0.05]" />
-			</div>
-
-			{/* Paragraph */}
-			<div className="space-y-2.5">
-				<div className="h-2.5 w-full rounded-full bg-foreground/[0.05]" />
-				<div className="h-2.5 w-full rounded-full bg-foreground/[0.05]" />
-				<div className="h-2.5 w-3/5 rounded-full bg-foreground/[0.05]" />
-			</div>
-
-			{/* Heading */}
-			<div className="h-3.5 w-1/3 rounded-full bg-foreground/[0.06]" />
-
-			{/* Paragraph */}
-			<div className="space-y-2.5">
-				<div className="h-2.5 w-full rounded-full bg-foreground/[0.05]" />
-				<div className="h-2.5 w-4/5 rounded-full bg-foreground/[0.05]" />
-			</div>
-
-			{/* Table */}
-			<div className="space-y-0 rounded-lg border border-foreground/[0.05] overflow-hidden">
-				<div className="flex gap-6 px-4 py-3">
-					<div className="h-2.5 w-1/5 rounded-full bg-foreground/[0.06]" />
-					<div className="h-2.5 w-1/5 rounded-full bg-foreground/[0.06]" />
-					<div className="h-2.5 w-1/5 rounded-full bg-foreground/[0.06]" />
+			<div
+				className="space-y-8"
+				style={{
+					maskImage: "linear-gradient(to bottom, black 0%, transparent 40%)",
+					WebkitMaskImage:
+						"linear-gradient(to bottom, black 0%, transparent 40%)",
+				}}
+			>
+				{/* Title */}
+				<div className="space-y-3">
+					<div className="h-4 w-2/3 rounded-full bg-foreground/[0.07]" />
+					<div className="h-3 w-2/5 rounded-full bg-foreground/[0.05]" />
 				</div>
-				{[1, 2].map((i) => (
-					<div
-						key={i}
-						className="flex gap-6 px-4 py-3 border-t border-foreground/[0.04]"
-					>
-						<div className="h-2 w-1/5 rounded-full bg-foreground/[0.04]" />
-						<div className="h-2 w-1/5 rounded-full bg-foreground/[0.04]" />
-						<div className="h-2 w-1/5 rounded-full bg-foreground/[0.04]" />
-					</div>
-				))}
-			</div>
 
-			{/* Paragraph */}
-			<div className="space-y-2.5">
-				<div className="h-2.5 w-full rounded-full bg-foreground/[0.05]" />
-				<div className="h-2.5 w-2/3 rounded-full bg-foreground/[0.05]" />
+				{/* Paragraph */}
+				<div className="space-y-2.5">
+					<div className="h-2.5 w-full rounded-full bg-foreground/[0.05]" />
+					<div className="h-2.5 w-full rounded-full bg-foreground/[0.05]" />
+					<div className="h-2.5 w-3/5 rounded-full bg-foreground/[0.05]" />
+				</div>
+
+				{/* Heading */}
+				<div className="h-3.5 w-1/3 rounded-full bg-foreground/[0.06]" />
+
+				{/* Paragraph */}
+				<div className="space-y-2.5">
+					<div className="h-2.5 w-full rounded-full bg-foreground/[0.05]" />
+					<div className="h-2.5 w-4/5 rounded-full bg-foreground/[0.05]" />
+				</div>
+
+				{/* Table */}
+				<div className="space-y-0 rounded-lg border border-foreground/[0.05] overflow-hidden">
+					<div className="flex gap-6 px-4 py-3">
+						<div className="h-2.5 w-1/5 rounded-full bg-foreground/[0.06]" />
+						<div className="h-2.5 w-1/5 rounded-full bg-foreground/[0.06]" />
+						<div className="h-2.5 w-1/5 rounded-full bg-foreground/[0.06]" />
+					</div>
+					{[1, 2].map((i) => (
+						<div
+							key={i}
+							className="flex gap-6 px-4 py-3 border-t border-foreground/[0.04]"
+						>
+							<div className="h-2 w-1/5 rounded-full bg-foreground/[0.04]" />
+							<div className="h-2 w-1/5 rounded-full bg-foreground/[0.04]" />
+							<div className="h-2 w-1/5 rounded-full bg-foreground/[0.04]" />
+						</div>
+					))}
+				</div>
+
+				{/* Paragraph */}
+				<div className="space-y-2.5">
+					<div className="h-2.5 w-full rounded-full bg-foreground/[0.05]" />
+					<div className="h-2.5 w-2/3 rounded-full bg-foreground/[0.05]" />
+				</div>
 			</div>
-		</div>
 		</div>
 	);
 }

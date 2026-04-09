@@ -110,7 +110,6 @@ function ScoreCard({ score, summary }: { score: number; summary?: string }) {
 	);
 }
 
-
 interface ReportViewProps {
 	diagnostic: Diagnostic;
 	onBack: () => void;
@@ -168,7 +167,7 @@ export function ReportView({ diagnostic, onBack }: ReportViewProps) {
 			if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
 
 			const rect = link.getBoundingClientRect();
-			const containerRect = el!.getBoundingClientRect();
+			const containerRect = el?.getBoundingClientRect();
 			setTooltip({
 				text: text.length > 280 ? `${text.slice(0, 277)}...` : text,
 				x: rect.left - containerRect.left + rect.width / 2,
@@ -281,6 +280,7 @@ export function ReportView({ diagnostic, onBack }: ReportViewProps) {
 				{/* Footnote hover tooltip */}
 				{tooltip && (
 					<div
+						role="tooltip"
 						className="footnote-tooltip"
 						style={{ left: `${tooltip.x}px`, top: `${tooltip.y}px` }}
 						onMouseEnter={() => {

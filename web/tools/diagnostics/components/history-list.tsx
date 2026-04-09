@@ -110,97 +110,95 @@ export function HistoryList({
 
 	return (
 		<div className="@container">
-		<div className="grid grid-cols-1 @[480px]:grid-cols-2 @[780px]:grid-cols-3 @[1060px]:grid-cols-4 gap-3">
-			{diagnostics.map((d) => (
-				<button
-					key={d.id}
-					type="button"
-					onClick={() => onSelect(d.id)}
-					className="group relative flex flex-col rounded-lg border-shadow bg-card text-left transition-colors hover:bg-accent/50 overflow-hidden"
-					style={{
-						transition: `background-color 150ms var(--ease-out-quint)`,
-					}}
-				>
-					{/* Markdown preview snippet */}
-					<div className="relative h-40 overflow-hidden px-3.5 pt-3 pointer-events-none opacity-30">
-						<div className="report-prose origin-top-left scale-[0.95] w-[105%] text-[0.7rem] leading-[1.45]">
-							<Markdown remarkPlugins={[remarkGfm]}>
-								{d.reportPreview || d.summary || ""}
-							</Markdown>
-						</div>
-						<div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-card to-transparent" />
-					</div>
-
-					{/* Card footer: meta + score */}
-					<div className="flex items-center gap-2.5 px-3.5 pb-3.5 pt-2">
-						<img
-							src={`https://www.google.com/s2/favicons?domain=${getDomain(d.url)}&sz=64`}
-							alt=""
-							width={20}
-							height={20}
-							className="size-5 rounded-sm shrink-0 self-start mt-0.5"
-						/>
-						<div className="flex-1 min-w-0">
-							<div className="flex items-center gap-2">
-								<span className="text-sm font-medium truncate">
-									{d.title || getDomain(d.url)}
-								</span>
-								{d.status === "running" && (
-									<Badge
-										variant="secondary"
-										className="text-[9px] px-1.5 py-0"
-									>
-										Running
-									</Badge>
-								)}
+			<div className="grid grid-cols-1 @[480px]:grid-cols-2 @[780px]:grid-cols-3 @[1060px]:grid-cols-4 gap-3">
+				{diagnostics.map((d) => (
+					<button
+						key={d.id}
+						type="button"
+						onClick={() => onSelect(d.id)}
+						className="group relative flex flex-col rounded-lg border-shadow bg-card text-left transition-colors hover:bg-accent/50 overflow-hidden"
+						style={{
+							transition: `background-color 150ms var(--ease-out-quint)`,
+						}}
+					>
+						{/* Markdown preview snippet */}
+						<div className="relative h-40 overflow-hidden px-3.5 pt-3 pointer-events-none opacity-30">
+							<div className="report-prose origin-top-left scale-[0.95] w-[105%] text-[0.7rem] leading-[1.45]">
+								<Markdown remarkPlugins={[remarkGfm]}>
+									{d.reportPreview || d.summary || ""}
+								</Markdown>
 							</div>
-							<p className="text-xs text-muted-foreground truncate mt-0.5">
-								{getDomain(d.url)}
-								{d.createdAt && (
-									<>
-										{" · "}
-										{formatDistanceToNow(new Date(d.createdAt), {
-											addSuffix: true,
-										})}
-									</>
-								)}
-							</p>
+							<div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-card to-transparent" />
 						</div>
 
-						{d.healthScore != null && (
-							<MiniScoreRing score={d.healthScore} />
-						)}
-					</div>
+						{/* Card footer: meta + score */}
+						<div className="flex items-center gap-2.5 px-3.5 pb-3.5 pt-2">
+							<img
+								src={`https://www.google.com/s2/favicons?domain=${getDomain(d.url)}&sz=64`}
+								alt=""
+								width={20}
+								height={20}
+								className="size-5 rounded-sm shrink-0 self-start mt-0.5"
+							/>
+							<div className="flex-1 min-w-0">
+								<div className="flex items-center gap-2">
+									<span className="text-sm font-medium truncate">
+										{d.title || getDomain(d.url)}
+									</span>
+									{d.status === "running" && (
+										<Badge
+											variant="secondary"
+											className="text-[9px] px-1.5 py-0"
+										>
+											Running
+										</Badge>
+									)}
+								</div>
+								<p className="text-xs text-muted-foreground truncate mt-0.5">
+									{getDomain(d.url)}
+									{d.createdAt && (
+										<>
+											{" · "}
+											{formatDistanceToNow(new Date(d.createdAt), {
+												addSuffix: true,
+											})}
+										</>
+									)}
+								</p>
+							</div>
 
-					{/* Delete menu */}
-					<div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									variant="ghost"
-									size="icon-xs"
-									className="bg-card/80 backdrop-blur-sm"
-									onClick={(e) => e.stopPropagation()}
-								>
-									<MoreHorizontal className="size-3.5" />
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align="end">
-								<DropdownMenuItem
-									variant="destructive"
-									onClick={(e) => {
-										e.stopPropagation();
-										onDelete(d.id);
-									}}
-								>
-									<Trash2 />
-									Delete
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-					</div>
-				</button>
-			))}
+							{d.healthScore != null && <MiniScoreRing score={d.healthScore} />}
+						</div>
+
+						{/* Delete menu */}
+						<div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										variant="ghost"
+										size="icon-xs"
+										className="bg-card/80 backdrop-blur-sm"
+										onClick={(e) => e.stopPropagation()}
+									>
+										<MoreHorizontal className="size-3.5" />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end">
+									<DropdownMenuItem
+										variant="destructive"
+										onClick={(e) => {
+											e.stopPropagation();
+											onDelete(d.id);
+										}}
+									>
+										<Trash2 />
+										Delete
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</div>
+					</button>
+				))}
 			</div>
 		</div>
 	);
