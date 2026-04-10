@@ -8,3 +8,7 @@ command = "bun run build:web"
 
 [observability]
 enabled = true
+
+[[routes]]
+pattern = "site-diagnostics.decocms.com"
+custom_domain = true
