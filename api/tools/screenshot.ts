@@ -91,13 +91,13 @@ export const screenshotTool = (_env: Env) =>
 
 				const slug = parsedUrl.hostname.replace(/[^a-zA-Z0-9._-]/g, "-");
 				const filename = `${slug}-${device}-${randomUUID().slice(0, 8)}.png`;
-				const imageUrl = await uploadScreenshot(buf, filename);
+				await uploadScreenshot(buf, filename);
 
 				return {
 					url,
 					device,
 					sizeKB: Math.round(buf.length / 1024),
-					imageUrl,
+					imageUrl: `/api/screenshots/${filename}`,
 				};
 			} catch (error) {
 				const msg = error instanceof Error ? error.message : String(error);

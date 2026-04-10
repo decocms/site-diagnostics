@@ -63,25 +63,43 @@ async function putJson(key: string, data: unknown): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Screenshot upload
+// Screenshot storage
 // ---------------------------------------------------------------------------
 
 export async function uploadScreenshot(
 	buf: Buffer,
 	filename: string,
-): Promise<string> {
-	const publicUrl = process.env.S3_PUBLIC_URL;
-	if (!publicUrl) throw new Error("S3_PUBLIC_URL env var is not set");
-	const key = `screenshots/${filename}`;
+): Promise<void> {
 	await getClient().send(
 		new PutObjectCommand({
 			Bucket: getBucket(),
-			Key: key,
+			Key: `screenshots/${filename}`,
 			Body: buf,
 			ContentType: "image/png",
 		}),
 	);
-	return `${publicUrl.replace(/\/$/, "")}/${key}`;
+}
+
+export async function getScreenshot(
+	filename: string,
+): Promise<ReadableStream | null> {
+	try {
+		const res = await getClient().send(
+			new GetObjectCommand({
+				Bucket: getBucket(),
+				Key: `screenshots/${filename}`,
+			}),
+		);
+		return (res.Body?.transformToWebStream() as ReadableStream) ?? null;
+	} catch (err: unknown) {
+		if (
+			err instanceof Error &&
+			(err.name === "NoSuchKey" || err.name === "NotFound")
+		) {
+			return null;
+		}
+		throw err;
+	}
 }
 
 // ---------------------------------------------------------------------------
