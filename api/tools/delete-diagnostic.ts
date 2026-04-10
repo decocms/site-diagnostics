@@ -23,8 +23,10 @@ export const deleteDiagnosticTool = (_env: Env) =>
 			idempotentHint: true,
 			openWorldHint: false,
 		},
-		execute: async ({ context }) => {
-			deleteDiagnostic(context.id);
+		execute: async ({ context, runtimeContext }) => {
+			const orgId =
+				runtimeContext.env.MESH_REQUEST_CONTEXT.organizationId ?? "default";
+			await deleteDiagnostic(context.id, orgId);
 			return { success: true };
 		},
 	});

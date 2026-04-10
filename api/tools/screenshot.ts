@@ -1,15 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { resolveBrowserEndpoint, withBrowserPage } from "../lib/browserless.ts";
+import { uploadScreenshot } from "../lib/storage.ts";
 import { deviceInput, urlInput } from "../lib/schemas.ts";
 import type { Env } from "../types/env.ts";
 
 // ── Constants ──────────────────────────────────────────────
 
-const SCREENSHOTS_DIR = join(import.meta.dir, "../../data/screenshots");
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 // ── Schemas ────────────────────────────────────────────────
@@ -38,7 +36,6 @@ export const screenshotOutputSchema = z.object({
 	url: z.string(),
 	device: z.enum(["desktop", "mobile"]),
 	sizeKB: z.number().optional(),
-	savedTo: z.string().optional(),
 	imageUrl: z.string().optional(),
 	error: z.string().optional(),
 });
@@ -51,7 +48,7 @@ export const screenshotTool = (_env: Env) =>
 	createTool({
 		id: "screenshot",
 		description:
-			"Take a screenshot of a URL. Saves the image and returns a reference. Use to verify page layout and visual issues.",
+			"Take a screenshot of a URL. Saves the image to R2 and returns a public URL. Use to verify page layout and visual issues.",
 		inputSchema: screenshotInputSchema,
 		outputSchema: screenshotOutputSchema,
 		annotations: {
@@ -92,31 +89,15 @@ export const screenshotTool = (_env: Env) =>
 					};
 				}
 
-				// Sanitize filename to prevent path traversal
 				const slug = parsedUrl.hostname.replace(/[^a-zA-Z0-9._-]/g, "-");
 				const filename = `${slug}-${device}-${randomUUID().slice(0, 8)}.png`;
-				const filePath = join(SCREENSHOTS_DIR, filename);
-
-				// Verify resolved path is within SCREENSHOTS_DIR
-				if (!resolve(filePath).startsWith(resolve(SCREENSHOTS_DIR))) {
-					throw new Error("Invalid screenshot path");
-				}
-
-				await mkdir(dirname(filePath), { recursive: true });
-				await writeFile(filePath, buf);
-
-				const port = process.env.PORT ? Number(process.env.PORT) : 3001;
-				const worktreeSlug = process.env.WORKTREE_SLUG;
-				const serverBase = worktreeSlug
-					? `http://${worktreeSlug}.localhost`
-					: `http://localhost:${port}`;
+				const imageUrl = await uploadScreenshot(buf, filename);
 
 				return {
 					url,
 					device,
 					sizeKB: Math.round(buf.length / 1024),
-					savedTo: filePath,
-					imageUrl: `${serverBase}/api/screenshots/${filename}`,
+					imageUrl,
 				};
 			} catch (error) {
 				const msg = error instanceof Error ? error.message : String(error);

@@ -1,48 +1,101 @@
 import {
-	existsSync,
-	mkdirSync,
-	readFileSync,
-	unlinkSync,
-	writeFileSync,
-} from "node:fs";
-import { join } from "node:path";
+	DeleteObjectCommand,
+	GetObjectCommand,
+	PutObjectCommand,
+	S3Client,
+} from "@aws-sdk/client-s3";
 import type { Diagnostic, DiagnosticMeta } from "../types/diagnostic.ts";
 
 // ---------------------------------------------------------------------------
-// Local filesystem storage for diagnostics
+// S3-compatible storage for diagnostics (Cloudflare R2)
 // ---------------------------------------------------------------------------
 
-const DATA_DIR = join(import.meta.dir, "../../.data");
-const DIAGNOSTICS_DIR = join(DATA_DIR, "diagnostics");
-const INDEX_PATH = join(DIAGNOSTICS_DIR, "_index.json");
-
-function ensureDir(dir: string): void {
-	if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+function getClient(): S3Client {
+	return new S3Client({
+		endpoint: process.env.S3_ENDPOINT,
+		region: process.env.S3_REGION ?? "auto",
+		credentials: {
+			accessKeyId: process.env.S3_ACCESS_KEY_ID ?? "",
+			secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? "",
+		},
+	});
 }
 
-function readJson<T>(path: string): T | null {
-	if (!existsSync(path)) return null;
-	return JSON.parse(readFileSync(path, "utf-8")) as T;
+function getBucket(): string {
+	return process.env.S3_BUCKET ?? "site-diagnostics";
 }
 
-function writeJson(path: string, data: unknown): void {
-	const dir = join(path, "..");
-	ensureDir(dir);
-	writeFileSync(path, JSON.stringify(data, null, "\t"));
+function diagnosticKey(orgId: string, id: string): string {
+	return `diagnostics/${orgId}/${id}.json`;
+}
+
+function indexKey(orgId: string): string {
+	return `diagnostics/${orgId}/_index.json`;
+}
+
+async function getJson<T>(key: string): Promise<T | null> {
+	try {
+		const res = await getClient().send(
+			new GetObjectCommand({ Bucket: getBucket(), Key: key }),
+		);
+		const body = await res.Body?.transformToString("utf-8");
+		return body ? (JSON.parse(body) as T) : null;
+	} catch (err: unknown) {
+		if (
+			err instanceof Error &&
+			(err.name === "NoSuchKey" || err.name === "NotFound")
+		) {
+			return null;
+		}
+		throw err;
+	}
+}
+
+async function putJson(key: string, data: unknown): Promise<void> {
+	await getClient().send(
+		new PutObjectCommand({
+			Bucket: getBucket(),
+			Key: key,
+			Body: JSON.stringify(data, null, "\t"),
+			ContentType: "application/json",
+		}),
+	);
+}
+
+// ---------------------------------------------------------------------------
+// Screenshot upload
+// ---------------------------------------------------------------------------
+
+export async function uploadScreenshot(
+	buf: Buffer,
+	filename: string,
+): Promise<string> {
+	const key = `screenshots/${filename}`;
+	await getClient().send(
+		new PutObjectCommand({
+			Bucket: getBucket(),
+			Key: key,
+			Body: buf,
+			ContentType: "image/png",
+		}),
+	);
+	const publicUrl = process.env.S3_PUBLIC_URL;
+	if (!publicUrl) throw new Error("S3_PUBLIC_URL env var is not set");
+	return `${publicUrl.replace(/\/$/, "")}/${key}`;
 }
 
 // ---------------------------------------------------------------------------
 // Diagnostic CRUD
 // ---------------------------------------------------------------------------
 
-export function saveDiagnostic(diagnostic: Diagnostic): string {
-	ensureDir(DIAGNOSTICS_DIR);
+export async function saveDiagnostic(
+	diagnostic: Diagnostic,
+	orgId: string,
+): Promise<string> {
+	await putJson(diagnosticKey(orgId, diagnostic.id), diagnostic);
 
-	// Write full diagnostic
-	writeJson(join(DIAGNOSTICS_DIR, `${diagnostic.id}.json`), diagnostic);
-
-	// Update index
-	const index = readJson<DiagnosticMeta[]>(INDEX_PATH) ?? [];
+	const idxKey = indexKey(orgId);
+	const index = (await getJson<DiagnosticMeta[]>(idxKey)) ?? [];
 	const updated = index.filter((m) => m.id !== diagnostic.id);
 	updated.unshift({
 		id: diagnostic.id,
@@ -54,24 +107,37 @@ export function saveDiagnostic(diagnostic: Diagnostic): string {
 		reportPreview: diagnostic.report?.slice(0, 600),
 		status: diagnostic.status ?? "complete",
 	});
-	writeJson(INDEX_PATH, updated);
+	await putJson(idxKey, updated);
 
 	return diagnostic.id;
 }
 
-export function loadDiagnostic(id: string): Diagnostic | null {
-	return readJson<Diagnostic>(join(DIAGNOSTICS_DIR, `${id}.json`));
+export async function loadDiagnostic(
+	id: string,
+	orgId: string,
+): Promise<Diagnostic | null> {
+	return getJson<Diagnostic>(diagnosticKey(orgId, id));
 }
 
-export function listDiagnostics(): DiagnosticMeta[] {
-	return readJson<DiagnosticMeta[]>(INDEX_PATH) ?? [];
+export async function listDiagnostics(
+	orgId: string,
+): Promise<DiagnosticMeta[]> {
+	return (await getJson<DiagnosticMeta[]>(indexKey(orgId))) ?? [];
 }
 
-export function deleteDiagnostic(id: string): void {
-	const filePath = join(DIAGNOSTICS_DIR, `${id}.json`);
-	if (existsSync(filePath)) unlinkSync(filePath);
+export async function deleteDiagnostic(
+	id: string,
+	orgId: string,
+): Promise<void> {
+	await getClient().send(
+		new DeleteObjectCommand({
+			Bucket: getBucket(),
+			Key: diagnosticKey(orgId, id),
+		}),
+	);
 
-	const index = readJson<DiagnosticMeta[]>(INDEX_PATH) ?? [];
+	const idxKey = indexKey(orgId);
+	const index = (await getJson<DiagnosticMeta[]>(idxKey)) ?? [];
 	const updated = index.filter((m) => m.id !== id);
-	writeJson(INDEX_PATH, updated);
+	await putJson(idxKey, updated);
 }

@@ -25,8 +25,10 @@ export const saveDiagnosticTool = (_env: Env) =>
 			idempotentHint: true,
 			openWorldHint: false,
 		},
-		execute: async ({ context }) => {
-			const id = saveDiagnostic(context);
+		execute: async ({ context, runtimeContext }) => {
+			const orgId =
+				runtimeContext.env.MESH_REQUEST_CONTEXT.organizationId ?? "default";
+			const id = await saveDiagnostic(context, orgId);
 			return { success: true, id };
 		},
 	});

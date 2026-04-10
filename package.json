@@ -20,6 +20,7 @@
 		"dev:conductor": "WORKTREE_SLUG=$CONDUCTOR_WORKSPACE_NAME bun run dev:worktree"
 	},
 	"dependencies": {
+		"@aws-sdk/client-s3": "^3.1028.0",
 		"@base-ui/react": "^1.2.0",
 		"@decocms/runtime": "^1.2.10",
 		"@hookform/resolvers": "^5.2.2",

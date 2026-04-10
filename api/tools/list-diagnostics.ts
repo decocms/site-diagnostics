@@ -32,8 +32,10 @@ export const listDiagnosticsTool = (_env: Env) =>
 			idempotentHint: true,
 			openWorldHint: false,
 		},
-		execute: async () => {
-			const diagnostics = listDiagnostics();
+		execute: async ({ runtimeContext }) => {
+			const orgId =
+				runtimeContext.env.MESH_REQUEST_CONTEXT.organizationId ?? "default";
+			const diagnostics = await listDiagnostics(orgId);
 			return { diagnostics };
 		},
 	});
