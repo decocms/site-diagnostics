@@ -8,8 +8,6 @@ import { type Env, StateSchema } from "./types/env.ts";
 // biome-ignore lint/suspicious/noExplicitAny: runtime.fetch signature compatibility
 type Fetcher = (req: Request, ...args: any[]) => Response | Promise<Response>;
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
-
 const colors = {
 	reset: "\x1b[0m",
 	dim: "\x1b[2m",
@@ -116,16 +114,6 @@ function withMcpApiRoute(fetcher: Fetcher): Fetcher {
 	};
 }
 
-Bun.serve({
-	idleTimeout: 0,
-	hostname: "0.0.0.0",
-	port: PORT,
+export const app = {
 	fetch: withLogging(withMcpApiRoute(runtime.fetch)),
-});
-
-const slug = process.env.WORKTREE_SLUG;
-const baseUrl = slug ? `http://${slug}.localhost` : `http://localhost:${PORT}`;
-
-console.log("");
-console.log(`${colors.mcp}MCP App${colors.reset}: ${baseUrl}/api/mcp`);
-console.log("");
+};

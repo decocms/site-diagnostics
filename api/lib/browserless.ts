@@ -1,7 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Page } from "puppeteer-core";
-import puppeteer from "puppeteer-core";
 
 // ── Constants ──────────────────────────────────────────────
 
@@ -102,9 +101,11 @@ export function findLocalChromium(): string | null {
 				continue;
 
 			try {
-				const glob = new Bun.Glob(pattern);
-				for (const match of glob.scanSync({ absolute: true })) {
-					if (existsSync(match)) return match;
+				if (typeof Bun !== "undefined") {
+					const glob = new Bun.Glob(pattern);
+					for (const match of glob.scanSync({ absolute: true })) {
+						if (existsSync(match)) return match;
+					}
 				}
 			} catch {
 				// Glob may fail, continue
@@ -174,6 +175,7 @@ export async function withBrowserPage<T>(
 	options?: { cookies?: Record<string, string>; domain?: string },
 ): Promise<T> {
 	const mode = getBrowserMode();
+	const puppeteer = (await import("puppeteer-core")).default;
 	let browser: Awaited<ReturnType<typeof puppeteer.connect>> | undefined;
 
 	try {

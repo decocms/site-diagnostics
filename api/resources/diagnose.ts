@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createPublicResource } from "@decocms/runtime/tools";
 import { DIAGNOSE_RESOURCE_URI } from "../tools/diagnose.ts";
 import type { Env } from "../types/env.ts";
@@ -7,8 +8,8 @@ import type { Env } from "../types/env.ts";
 const RESOURCE_MIME_TYPE = "text/html;profile=mcp-app";
 
 function getDistPath(): string {
-	const projectRoot = join(import.meta.dir, "../..");
-	return join(projectRoot, "dist", "client", "index.html");
+	const __dirname = dirname(fileURLToPath(import.meta.url));
+	return join(__dirname, "..", "..", "dist", "client", "index.html");
 }
 
 export const diagnoseAppResource = (_env: Env) =>
