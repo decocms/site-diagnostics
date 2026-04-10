@@ -1,12 +1,9 @@
-import { readFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
 import { withRuntime } from "@decocms/runtime";
+import { getScreenshot } from "./lib/storage.ts";
 import { prompts } from "./prompts/index.ts";
 import { diagnoseAppResource } from "./resources/diagnose.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
-
-const SCREENSHOTS_DIR = resolve(join(import.meta.dir, "../data/screenshots"));
 
 // biome-ignore lint/suspicious/noExplicitAny: runtime.fetch signature compatibility
 type Fetcher = (req: Request, ...args: any[]) => Response | Promise<Response>;
@@ -89,22 +86,20 @@ function withMcpApiRoute(fetcher: Fetcher): Fetcher {
 			return new Response("Not Found", { status: 404 });
 		}
 
-		// Serve screenshots as static files
+		// Proxy screenshots from R2
 		if (url.pathname.startsWith("/api/screenshots/") && req.method === "GET") {
 			const filename = url.pathname.slice("/api/screenshots/".length);
-			// Sanitize: only allow safe filename chars
 			if (!/^[a-zA-Z0-9._-]+\.png$/.test(filename)) {
 				return new Response("Not Found", { status: 404 });
 			}
-			const filePath = join(SCREENSHOTS_DIR, filename);
-			// Path traversal check
-			if (!resolve(filePath).startsWith(SCREENSHOTS_DIR)) {
-				return new Response("Not Found", { status: 404 });
-			}
 			try {
-				const data = await readFile(filePath);
-				return new Response(data, {
-					headers: { "content-type": "image/png" },
+				const stream = await getScreenshot(filename);
+				if (!stream) return new Response("Not Found", { status: 404 });
+				return new Response(stream, {
+					headers: {
+						"content-type": "image/png",
+						"cache-control": "public, max-age=31536000, immutable",
+					},
 				});
 			} catch {
 				return new Response("Not Found", { status: 404 });
