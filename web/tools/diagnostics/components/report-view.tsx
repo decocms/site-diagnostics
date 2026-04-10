@@ -12,7 +12,6 @@ interface Diagnostic {
 	healthScore?: number;
 	summary?: string;
 	report: string;
-	screenshotUrl?: string;
 	status: string;
 }
 
@@ -274,17 +273,6 @@ export function ReportView({ diagnostic, onBack }: ReportViewProps) {
 						score={diagnostic.healthScore ?? 0}
 						summary={diagnostic.summary}
 					/>
-				)}
-
-				{/* ── Screenshot ──────────────────────────────────────── */}
-				{diagnostic.screenshotUrl && (
-					<div className="not-prose mb-8">
-						<img
-							src={diagnostic.screenshotUrl}
-							alt={`Screenshot of ${domain}`}
-							className="w-full rounded-xl border border-border"
-						/>
-					</div>
 				)}
 
 				{/* ── Markdown report ─────────────────────────────────── */}

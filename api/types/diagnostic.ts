@@ -8,7 +8,6 @@ export const DiagnosticSchema = z.object({
 	healthScore: z.number().min(0).max(100).optional(),
 	summary: z.string().optional(),
 	report: z.string(),
-	screenshotUrl: z.string().optional(),
 	status: z.enum(["running", "complete", "error"]).default("complete"),
 });
 

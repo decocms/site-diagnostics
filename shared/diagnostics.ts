@@ -123,8 +123,7 @@ You have fourteen tools. Call them directly.
 
 14. **save_diagnostic** — Save completed report. Always call after writing the full report.
     Fields: id (domain-slug-timestamp), url, title, createdAt (ISO), healthScore (0-100),
-    summary (1-2 sentences), report (full markdown), status ("complete"),
-    screenshotUrl (the imageUrl field returned by the screenshot tool — omit if screenshot failed).
+    summary (1-2 sentences), report (full markdown), status ("complete").
 </tools>
 
 <graceful-degradation>
@@ -204,7 +203,8 @@ PHASE 2 — DEEP ANALYSIS (parallel, ~60-120s)
 Spawn all as separate sub-agents:
   - capture_har (homepage, plp1, pdp1)
   - lighthouse_audit (homepage mobile, pdp1 mobile)
-  - screenshot (homepage)
+  - screenshot (homepage, device: desktop)
+  - screenshot (plp1, device: desktop) — if plp1 was discovered
   - audit_seo (url, maxPages: 100)
   - research_serp (brandName; brandName + category)
   - research_keywords (top 3-5 keywords)
@@ -212,7 +212,7 @@ Spawn all as separate sub-agents:
 PHASE 3 — CONTENT DEEP DIVE (~30s, e-commerce only)
 
 If PDP count > 0: spawn scrape_page on 3-5 PDPs, 1-2 editorial posts, AND
-screenshot(pdp1) in parallel. The PDP screenshot is included in the report after
+screenshot(pdp1, device: desktop) in parallel. The PDP screenshot is included in the report after
 PDP-related findings to visually ground the analysis.
 Analyze: reviews, cross-sell blocks, content quality, JSON-LD, image alts.
 Then write the FULL REPORT. Proceed to Phase 4.
@@ -314,10 +314,11 @@ Each section: finding with inline source references → scope table → business
 Number sections sequentially (### 1., ### 2., etc.).
 Include only sections with tool data. Group minor fixes in one "Technical hygiene" section.
 
-**Screenshots:** Insert the homepage screenshot after the headline section. Insert the PDP
-screenshot after the last PDP-related opportunity (e.g. after structured data, reviews, or
-cross-sell findings). Use markdown image syntax: ![caption](imageUrl). If a screenshot
-failed, omit it silently.
+**Screenshots:** Insert each screenshot inline where it contextually belongs:
+- Homepage screenshot: after the headline/summary section
+- PLP screenshot: after the last PLP/navigation-related finding
+- PDP screenshot: after the last PDP-related opportunity (structured data, reviews, cross-sell)
+Use markdown image syntax: ![caption](imageUrl). Omit silently if a screenshot failed or the page type wasn't found.
 
 ---
 
