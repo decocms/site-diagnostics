@@ -1,5 +1,4 @@
 import { createTool } from "@decocms/runtime/tools";
-import { harFromMessages } from "chrome-har";
 import type { Browser, Page } from "puppeteer-core";
 import { z } from "zod";
 import {
@@ -488,7 +487,10 @@ async function executeCapture(
 	}
 
 	const endpoint = resolveBrowserEndpoint(proxyCountry);
-	const puppeteer = (await import("puppeteer-core")).default;
+	const [puppeteer, { harFromMessages }] = await Promise.all([
+		import("puppeteer-core").then((m) => m.default),
+		import("chrome-har"),
+	]);
 	let browser: Browser | undefined;
 
 	try {
