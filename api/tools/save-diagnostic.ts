@@ -27,7 +27,7 @@ export const saveDiagnosticTool = (_env: Env) =>
 		},
 		execute: async ({ context, runtimeContext }) => {
 			const orgId =
-				runtimeContext.env.MESH_REQUEST_CONTEXT.organizationId ?? "default";
+				runtimeContext?.env?.MESH_REQUEST_CONTEXT?.organizationId ?? "default";
 			const id = await saveDiagnostic(context, orgId);
 			return { success: true, id };
 		},

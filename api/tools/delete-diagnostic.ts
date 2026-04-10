@@ -25,7 +25,7 @@ export const deleteDiagnosticTool = (_env: Env) =>
 		},
 		execute: async ({ context, runtimeContext }) => {
 			const orgId =
-				runtimeContext.env.MESH_REQUEST_CONTEXT.organizationId ?? "default";
+				runtimeContext?.env?.MESH_REQUEST_CONTEXT?.organizationId ?? "default";
 			await deleteDiagnostic(context.id, orgId);
 			return { success: true };
 		},

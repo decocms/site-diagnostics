@@ -34,7 +34,8 @@ export const listDiagnosticsTool = (_env: Env) =>
 		},
 		execute: async ({ runtimeContext }) => {
 			const orgId =
-				runtimeContext.env.MESH_REQUEST_CONTEXT.organizationId ?? "default";
+				runtimeContext?.env?.MESH_REQUEST_CONTEXT?.organizationId ?? "default";
+			console.log("[list_diagnostics] orgId:", orgId);
 			const diagnostics = await listDiagnostics(orgId);
 			return { diagnostics };
 		},

@@ -24,7 +24,7 @@ export const loadDiagnosticTool = (_env: Env) =>
 		},
 		execute: async ({ context, runtimeContext }) => {
 			const orgId =
-				runtimeContext.env.MESH_REQUEST_CONTEXT.organizationId ?? "default";
+				runtimeContext?.env?.MESH_REQUEST_CONTEXT?.organizationId ?? "default";
 			const diagnostic = await loadDiagnostic(context.id, orgId);
 			if (!diagnostic) {
 				throw new Error(`Diagnostic not found: ${context.id}`);
