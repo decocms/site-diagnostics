@@ -6,10 +6,12 @@
 	"type": "module",
 	"scripts": {
 		"dev": "concurrently -k -n api,web -c magenta,cyan \"bun run dev:api\" \"bun run dev:web\"",
-		"dev:api": "bun run --hot api/main.ts",
+		"dev:api": "bun run --hot api/main.bun.ts",
 		"dev:web": "vite build --watch",
 		"build:web": "vite build",
-		"build:server": "NODE_ENV=production bun build api/main.ts --target=bun --minify --outfile=dist/server/main.js && cp package.json dist/server/",
+		"build:server": "NODE_ENV=production bun build api/main.bun.ts --target=bun --minify --outfile=dist/server/main.js && cp package.json dist/server/",
+		"dev:workers": "bun run build:web && wrangler dev",
+		"deploy": "bun run build:web && wrangler deploy",
 		"build": "bun run build:web && bun run build:server",
 		"ci:check": "bunx biome ci .",
 		"check": "tsc --noEmit",
@@ -75,6 +77,7 @@
 		"unified": "^11.0.5",
 		"vite": "^7.3.1",
 		"vite-plugin-singlefile": "^2.3.0",
+		"wrangler": "^4.22.0",
 		"worktree-devservers": "0.3.1"
 	}
 }

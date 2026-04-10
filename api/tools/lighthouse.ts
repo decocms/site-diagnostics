@@ -240,6 +240,10 @@ async function runLocalLighthouse(
 	device: "desktop" | "mobile",
 	// biome-ignore lint/suspicious/noExplicitAny: Lighthouse JSON is untyped
 ): Promise<Record<string, any>> {
+	if (typeof Bun === "undefined") {
+		throw new Error("Local Lighthouse requires Bun runtime");
+	}
+
 	// Find lighthouse binary
 	const proc = Bun.spawn(["which", "lighthouse"], {
 		stdout: "pipe",
