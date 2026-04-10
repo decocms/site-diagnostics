@@ -70,6 +70,8 @@ export async function uploadScreenshot(
 	buf: Buffer,
 	filename: string,
 ): Promise<string> {
+	const publicUrl = process.env.S3_PUBLIC_URL;
+	if (!publicUrl) throw new Error("S3_PUBLIC_URL env var is not set");
 	const key = `screenshots/${filename}`;
 	await getClient().send(
 		new PutObjectCommand({
@@ -79,8 +81,6 @@ export async function uploadScreenshot(
 			ContentType: "image/png",
 		}),
 	);
-	const publicUrl = process.env.S3_PUBLIC_URL;
-	if (!publicUrl) throw new Error("S3_PUBLIC_URL env var is not set");
 	return `${publicUrl.replace(/\/$/, "")}/${key}`;
 }
 
