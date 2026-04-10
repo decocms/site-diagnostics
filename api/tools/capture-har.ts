@@ -1,6 +1,6 @@
 import { createTool } from "@decocms/runtime/tools";
 import { harFromMessages } from "chrome-har";
-import puppeteer from "puppeteer-core";
+import type { Browser, Page } from "puppeteer-core";
 import { z } from "zod";
 import {
 	DESKTOP_VIEWPORT,
@@ -439,9 +439,7 @@ function categorizeType(mime: string): string {
 // ── Single-pass Capture ────────────────────────────────────
 
 async function capturePass(
-	page: Awaited<
-		ReturnType<Awaited<ReturnType<typeof puppeteer.connect>>["newPage"]>
-	>,
+	page: Page,
 	url: string,
 	waitUntil: "load" | "domcontentloaded" | "networkidle0" | "networkidle2",
 	timeout: number,
@@ -490,7 +488,8 @@ async function executeCapture(
 	}
 
 	const endpoint = resolveBrowserEndpoint(proxyCountry);
-	let browser: Awaited<ReturnType<typeof puppeteer.connect>> | undefined;
+	const puppeteer = (await import("puppeteer-core")).default;
+	let browser: Browser | undefined;
 
 	try {
 		// Connect or launch browser
