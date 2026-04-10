@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import { resolveBrowserEndpoint, withBrowserPage } from "../lib/browserless.ts";
-import { uploadScreenshot } from "../lib/storage.ts";
 import { deviceInput, urlInput } from "../lib/schemas.ts";
+import { uploadScreenshot } from "../lib/storage.ts";
 import type { Env } from "../types/env.ts";
 
 // ── Constants ──────────────────────────────────────────────
