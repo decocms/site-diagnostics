@@ -1,3 +1,7 @@
-import { app } from "./app.ts";
+// Wrangler rules (wrangler.toml) resolve this import as a Text module.
+import CLIENT_HTML from "../dist/client/index.html";
+import { createApp } from "./app.ts";
 
-export default { fetch: app.fetch };
+export default createApp({
+	clientHTML: CLIENT_HTML as unknown as string,
+});
