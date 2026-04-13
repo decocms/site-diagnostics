@@ -5,7 +5,7 @@ export const DiagnosticSchema = z.object({
 	url: z.string(),
 	title: z.string(),
 	createdAt: z.string(),
-	healthScore: z.number().min(0).max(100).optional(),
+	healthScore: z.coerce.number().min(0).max(100).optional(),
 	summary: z.string().optional(),
 	report: z.string(),
 	status: z.enum(["running", "complete", "error"]).default("complete"),
