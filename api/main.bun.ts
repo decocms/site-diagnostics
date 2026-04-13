@@ -1,4 +1,6 @@
-import { app } from "./app.ts";
+import { createApp } from "./app.ts";
+
+const app = createApp();
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
