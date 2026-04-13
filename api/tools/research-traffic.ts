@@ -24,19 +24,19 @@ const trafficSourceSchema = z.object({
 
 const keywordSchema = z.object({
 	keyword: z.string(),
-	searchVolume: z.number().optional(),
-	cpc: z.number().optional(),
-	estimatedValue: z.number().optional(),
+	searchVolume: z.number().nullish(),
+	cpc: z.number().nullish(),
+	estimatedValue: z.number().nullish(),
 });
 
 const monthlyVisitSchema = z.object({
 	month: z.string(),
-	visits: z.number(),
+	visits: z.number().nullable(),
 });
 
 const countryShareSchema = z.object({
 	country: z.string(),
-	share: z.number(),
+	share: z.number().nullable(),
 });
 
 const aiTrafficSchema = z.object({
