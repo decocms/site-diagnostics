@@ -6,6 +6,11 @@ compatibility_flags = ["nodejs_compat"]
 [build]
 command = "bun run build:web"
 
+[[rules]]
+type = "Text"
+globs = ["dist/client/*.html"]
+fallthrough = false
+
 [observability]
 enabled = true
 
