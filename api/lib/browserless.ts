@@ -170,7 +170,7 @@ function redactToken(msg: string): string {
  * WebSocket transport using the native WebSocket API.
  * Needed for Cloudflare Workers where the `ws` npm package doesn't work.
  */
-function createNativeWebSocketTransport(
+export function createNativeWebSocketTransport(
 	url: string,
 ): Promise<ConnectionTransport> {
 	return new Promise((resolve, reject) => {
@@ -196,7 +196,7 @@ function createNativeWebSocketTransport(
 }
 
 /** Returns true when running inside Cloudflare Workers (no fs, no `ws` npm). */
-function isWorkersRuntime(): boolean {
+export function isWorkersRuntime(): boolean {
 	return typeof globalThis.caches !== "undefined" && typeof Bun === "undefined";
 }
 

@@ -2,9 +2,11 @@ import { createTool } from "@decocms/runtime/tools";
 import type { Browser, Page } from "puppeteer-core";
 import { z } from "zod";
 import {
+	createNativeWebSocketTransport,
 	DESKTOP_VIEWPORT,
 	findLocalChromium,
 	getBrowserMode,
+	isWorkersRuntime,
 	MOBILE_UA,
 	MOBILE_VIEWPORT,
 	resolveBrowserEndpoint,
@@ -496,9 +498,14 @@ async function executeCapture(
 	try {
 		// Connect or launch browser
 		if (mode === "remote" && endpoint) {
-			browser = await puppeteer.connect({
-				browserWSEndpoint: endpoint,
-			});
+			if (isWorkersRuntime()) {
+				const transport = await createNativeWebSocketTransport(endpoint);
+				browser = await puppeteer.connect({ transport });
+			} else {
+				browser = await puppeteer.connect({
+					browserWSEndpoint: endpoint,
+				});
+			}
 		} else {
 			const executablePath = findLocalChromium();
 			if (!executablePath) {
