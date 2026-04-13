@@ -229,7 +229,9 @@ async function runRemoteLighthouse(
 		);
 	}
 
-	return response.json();
+	const json = await response.json();
+	// Browserless wraps the Lighthouse result under a "data" key
+	return json.data ?? json;
 }
 
 // ── Local Mode (CLI) ───────────────────────────────────────
