@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import type { Page } from "puppeteer-core";
+import type { ConnectionTransport, Page } from "puppeteer-core";
 
 // ── Constants ──────────────────────────────────────────────
 
@@ -166,6 +166,40 @@ function redactToken(msg: string): string {
 	return msg.replace(/token=[^&\s]+/gi, "token=<redacted>");
 }
 
+/**
+ * WebSocket transport using the native WebSocket API.
+ * Needed for Cloudflare Workers where the `ws` npm package doesn't work.
+ */
+function createNativeWebSocketTransport(
+	url: string,
+): Promise<ConnectionTransport> {
+	return new Promise((resolve, reject) => {
+		const ws = new WebSocket(url);
+		ws.addEventListener("open", () => {
+			const transport: ConnectionTransport = {
+				send: (message: string) => ws.send(message),
+				close: () => ws.close(),
+			};
+			ws.addEventListener("message", (event) => {
+				const data =
+					typeof event.data === "string" ? event.data : String(event.data);
+				transport.onmessage?.(data);
+			});
+			ws.addEventListener("close", () => transport.onclose?.());
+			ws.addEventListener("error", () => transport.onclose?.());
+			resolve(transport);
+		});
+		ws.addEventListener("error", (e) =>
+			reject(new Error(`WebSocket connection failed: ${e}`)),
+		);
+	});
+}
+
+/** Returns true when running inside Cloudflare Workers (no fs, no `ws` npm). */
+function isWorkersRuntime(): boolean {
+	return typeof globalThis.caches !== "undefined" && typeof Bun === "undefined";
+}
+
 // ── Session Lifecycle ──────────────────────────────────────
 
 export async function withBrowserPage<T>(
@@ -180,7 +214,12 @@ export async function withBrowserPage<T>(
 
 	try {
 		if (mode === "remote" && endpoint) {
-			browser = await puppeteer.connect({ browserWSEndpoint: endpoint });
+			if (isWorkersRuntime()) {
+				const transport = await createNativeWebSocketTransport(endpoint);
+				browser = await puppeteer.connect({ transport });
+			} else {
+				browser = await puppeteer.connect({ browserWSEndpoint: endpoint });
+			}
 		} else if (mode === "local") {
 			const executablePath = findLocalChromium();
 			if (!executablePath) {
