@@ -57,7 +57,7 @@ export const screenshotTool = (_env: Env) =>
 			idempotentHint: false,
 			openWorldHint: true,
 		},
-		execute: async ({ context }) => {
+		execute: async ({ context, runtimeContext }) => {
 			const { url, fullPage, device, waitUntil, timeout, cookies } = context;
 
 			try {
@@ -93,11 +93,14 @@ export const screenshotTool = (_env: Env) =>
 				const filename = `${slug}-${device}-${randomUUID().slice(0, 8)}.png`;
 				await uploadScreenshot(buf, filename);
 
+				const origin = runtimeContext?.req
+					? new URL(runtimeContext.req.url).origin
+					: "";
 				return {
 					url,
 					device,
 					sizeKB: Math.round(buf.length / 1024),
-					imageUrl: `/api/screenshots/${filename}`,
+					imageUrl: `${origin}/api/screenshots/${filename}`,
 				};
 			} catch (error) {
 				const msg = error instanceof Error ? error.message : String(error);
