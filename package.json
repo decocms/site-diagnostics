@@ -22,6 +22,8 @@
 		"dev:conductor": "WORKTREE_SLUG=$CONDUCTOR_WORKSPACE_NAME bun run dev:worktree"
 	},
 	"dependencies": {
+		"@ai-sdk/anthropic": "^3.0.69",
+		"@anthropic-ai/sdk": "^0.88.0",
 		"@aws-sdk/client-s3": "^3.1028.0",
 		"@base-ui/react": "^1.2.0",
 		"@decocms/runtime": "^1.2.10",
@@ -33,6 +35,7 @@
 		"@tanstack/history": "^1.133.5",
 		"@tanstack/react-query": "^5.90.21",
 		"@tanstack/react-router": "^1.133.5",
+		"ai": "^6.0.159",
 		"chrome-har": "^1.1.1",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
