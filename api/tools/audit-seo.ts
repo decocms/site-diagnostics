@@ -5,8 +5,168 @@ import {
 	onPageTaskPost,
 	pollOnPageTask,
 } from "../lib/dataforseo.ts";
+import { extractSeoMeta, extractSitemapUrls } from "../lib/html.ts";
 import { urlInput } from "../lib/schemas.ts";
 import type { Env } from "../types/env.ts";
+
+// ── JSON-LD Sampling ──────────────────────────────────────
+
+/** Common URL patterns that indicate a product detail page */
+const PDP_PATTERNS = [
+	/\/p$/, // deco.cx / VTEX: /slug/p
+	/\/p\?/, // deco.cx / VTEX with query params
+	/\/product\//,
+	/\/products\//,
+	/\/dp\//, // Amazon-style
+	/\/pdp\//,
+];
+
+function isPdpUrl(url: string): boolean {
+	return PDP_PATTERNS.some((re) => re.test(url));
+}
+
+const SAMPLE_SIZE = 5;
+const FETCH_TIMEOUT_MS = 10_000;
+
+/**
+ * Find PDP URLs from crawl results, falling back to the product sitemap.
+ */
+async function findPdpUrls(
+	crawledPages: { url: string }[],
+	origin: string,
+): Promise<string[]> {
+	// 1. Try crawl results first
+	const fromCrawl = crawledPages.map((p) => p.url).filter(isPdpUrl);
+	if (fromCrawl.length >= SAMPLE_SIZE) {
+		return fromCrawl.slice(0, SAMPLE_SIZE);
+	}
+
+	// 2. Fallback: try product sitemap
+	const sitemapCandidates = [
+		`${origin}/sitemap/product-0.xml`,
+		`${origin}/sitemap-products.xml`,
+	];
+
+	for (const sitemapUrl of sitemapCandidates) {
+		try {
+			const resp = await fetch(sitemapUrl, {
+				headers: {
+					"user-agent": "Mozilla/5.0 (compatible; SiteDiagnosticsBot/1.0)",
+				},
+				signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+			});
+			if (!resp.ok) continue;
+			const xml = await resp.text();
+			const urls = extractSitemapUrls(xml);
+			if (urls.length > 0) {
+				// Spread samples evenly across the sitemap
+				const step = Math.max(1, Math.floor(urls.length / SAMPLE_SIZE));
+				const sampled: string[] = [];
+				for (
+					let i = 0;
+					i < urls.length && sampled.length < SAMPLE_SIZE;
+					i += step
+				) {
+					sampled.push(urls[i]);
+				}
+				return sampled;
+			}
+		} catch {
+			// Sitemap not available, continue
+		}
+	}
+
+	// 3. Last resort: try sitemap index → find a product sitemap
+	try {
+		const resp = await fetch(`${origin}/sitemap.xml`, {
+			headers: {
+				"user-agent": "Mozilla/5.0 (compatible; SiteDiagnosticsBot/1.0)",
+			},
+			signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+		});
+		if (resp.ok) {
+			const xml = await resp.text();
+			const sitemaps = extractSitemapUrls(xml);
+			const productSitemap = sitemaps.find((s) => /product/i.test(s));
+			if (productSitemap) {
+				const resp2 = await fetch(productSitemap, {
+					headers: {
+						"user-agent": "Mozilla/5.0 (compatible; SiteDiagnosticsBot/1.0)",
+					},
+					signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+				});
+				if (resp2.ok) {
+					const xml2 = await resp2.text();
+					const urls = extractSitemapUrls(xml2);
+					if (urls.length > 0) {
+						const step = Math.max(1, Math.floor(urls.length / SAMPLE_SIZE));
+						const sampled: string[] = [];
+						for (
+							let i = 0;
+							i < urls.length && sampled.length < SAMPLE_SIZE;
+							i += step
+						) {
+							sampled.push(urls[i]);
+						}
+						return sampled;
+					}
+				}
+			}
+		}
+	} catch {
+		// Sitemap index not available
+	}
+
+	// Merge whatever we found from crawl
+	return fromCrawl.slice(0, SAMPLE_SIZE);
+}
+
+interface JsonLdSample {
+	sampled: number;
+	withJsonLd: number;
+	types: string[];
+}
+
+/**
+ * Fetch a sample of PDP URLs and check for JSON-LD presence using extractSeoMeta.
+ */
+async function sampleJsonLd(pdpUrls: string[]): Promise<JsonLdSample> {
+	const types = new Set<string>();
+	let withJsonLd = 0;
+
+	const results = await Promise.allSettled(
+		pdpUrls.map(async (pdpUrl) => {
+			const resp = await fetch(pdpUrl, {
+				headers: {
+					"user-agent": "Mozilla/5.0 (compatible; SiteDiagnosticsBot/1.0)",
+					accept:
+						"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+				},
+				signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+			});
+			if (!resp.ok) return null;
+			const html = await resp.text();
+			return extractSeoMeta(html);
+		}),
+	);
+
+	for (const r of results) {
+		if (r.status !== "fulfilled" || !r.value) continue;
+		const ldTypes = r.value["json-ld:types"];
+		if (ldTypes) {
+			withJsonLd++;
+			for (const t of ldTypes.split(", ")) {
+				types.add(t.trim());
+			}
+		}
+	}
+
+	return {
+		sampled: pdpUrls.length,
+		withJsonLd,
+		types: [...types],
+	};
+}
 
 // ── Schemas ────────────────────────────────────────────────
 
@@ -171,13 +331,46 @@ export const auditSeoTool = (_env: Env) =>
 					htmlPages.length > 0
 						? Math.round(totalWordCount / htmlPages.length)
 						: 0;
-				const pagesWithStructuredData = pages.filter(
-					(p) => p.checks.has_microdata || p.checks.has_json_ld,
-				).length;
 				const pagesWithMetaDescription = pages.filter(
 					(p) => p.meta.description,
 				).length;
 				const blogPages = pages.filter((p) => p.url.includes("/blog"));
+
+				// Structured data: DataForSEO's has_json_ld is unreliable
+				// (misses many sites). Always supplement with our own PDP sampling.
+				const dfsPagesWithSD = pages.filter(
+					(p) => p.checks.has_microdata || p.checks.has_json_ld,
+				).length;
+
+				let pagesWithStructuredData = dfsPagesWithSD;
+				let structuredDataValue: string;
+				let structuredDataStatus: "pass" | "warn" | "fail";
+
+				if (dfsPagesWithSD > 0) {
+					// DataForSEO already found structured data — trust it
+					structuredDataValue = `Found on ${dfsPagesWithSD}/${pages.length} pages`;
+					structuredDataStatus = "pass";
+				} else {
+					// DataForSEO says 0 — verify by sampling product pages ourselves
+					const origin = new URL(url).origin;
+					const pdpUrls = await findPdpUrls(pages, origin);
+
+					if (pdpUrls.length > 0) {
+						const sample = await sampleJsonLd(pdpUrls);
+						if (sample.withJsonLd > 0) {
+							pagesWithStructuredData = sample.withJsonLd;
+							const typeStr = sample.types.join(", ");
+							structuredDataValue = `Found on ${sample.withJsonLd}/${sample.sampled} sampled PDPs (${typeStr})`;
+							structuredDataStatus = "pass";
+						} else {
+							structuredDataValue = `Not found (sampled ${sample.sampled} PDPs)`;
+							structuredDataStatus = "fail";
+						}
+					} else {
+						structuredDataValue = "No structured data found";
+						structuredDataStatus = "fail";
+					}
+				}
 
 				// On-page signals
 				const onPageSignals: AuditSeoOutput["onPageSignals"] = [
@@ -203,11 +396,8 @@ export const auditSeoTool = (_env: Env) =>
 					},
 					{
 						label: "Structured Data",
-						value:
-							pagesWithStructuredData > 0
-								? `Found on ${pagesWithStructuredData}/${pages.length} pages`
-								: "No structured data found",
-						status: pagesWithStructuredData > 0 ? "pass" : "fail",
+						value: structuredDataValue,
+						status: structuredDataStatus,
 					},
 					{
 						label: "Average Word Count",
