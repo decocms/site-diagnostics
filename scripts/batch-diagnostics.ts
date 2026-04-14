@@ -20,14 +20,14 @@
  *   OUTPUT_DIR            — Directory for results (default: ./batch-output)
  */
 
-import { readFileSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { anthropic } from "@ai-sdk/anthropic";
+import type { JSONSchema7 } from "@ai-sdk/provider";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { CallToolResultSchema } from "@modelcontextprotocol/sdk/types.js";
-import type { JSONSchema7 } from "@ai-sdk/provider";
-import { jsonSchema, stepCountIs, streamText, tool, type ToolSet } from "ai";
+import { jsonSchema, stepCountIs, streamText, type ToolSet, tool } from "ai";
 
 // ── Config ────────────────────────────────────────────────────
 
@@ -636,33 +636,30 @@ function truncateResult(result: unknown): string {
 	return `${str.slice(0, MAX_RESULT_CHARS)}\n\n... [truncated, ${str.length} chars total]`;
 }
 
-async function toolsFromMcp(
-	mcpClient: Client,
-	slug: string,
-): Promise<ToolSet> {
+async function toolsFromMcp(mcpClient: Client, slug: string): Promise<ToolSet> {
 	const list = await mcpClient.listTools();
 	const entries = list.tools.map((t) => {
 		// Ensure schema has "type": "object" — Anthropic API requires it
 		const raw = (t.inputSchema ?? {}) as Record<string, unknown>;
 		const schema = { ...raw, type: raw.type ?? "object" } as JSONSchema7;
 		return [
-		t.name,
-		tool({
-			description: t.description ?? "",
-			inputSchema: jsonSchema(schema),
-			execute: async (input) => {
-				log(slug, `tool: ${t.name}`);
-				const args = injectDecoFBT(input) as Record<string, unknown>;
-				const result = await mcpClient.callTool(
-					{ name: t.name, arguments: args },
-					CallToolResultSchema,
-					{ timeout: 300_000 },
-				);
-				// Truncate large results to prevent context overflow
-				return truncateResult(result);
-			},
-		}),
-	];
+			t.name,
+			tool({
+				description: t.description ?? "",
+				inputSchema: jsonSchema(schema),
+				execute: async (input) => {
+					log(slug, `tool: ${t.name}`);
+					const args = injectDecoFBT(input) as Record<string, unknown>;
+					const result = await mcpClient.callTool(
+						{ name: t.name, arguments: args },
+						CallToolResultSchema,
+						{ timeout: 300_000 },
+					);
+					// Truncate large results to prevent context overflow
+					return truncateResult(result);
+				},
+			}),
+		];
 	});
 	return Object.fromEntries(entries) as ToolSet;
 }
@@ -679,8 +676,8 @@ function readDomains(csvPath: string): string[] {
 
 function domainSlug(url: string): string {
 	try {
-		return new URL(url)
-			.hostname.replace(/^www\./, "")
+		return new URL(url).hostname
+			.replace(/^www\./, "")
 			.replace(/[^a-z0-9.-]/g, "-");
 	} catch {
 		return url.replace(/[^a-z0-9.-]/g, "-");
@@ -716,7 +713,10 @@ async function runDiagnostic(domain: string): Promise<string | null> {
 		const originalSave = tools.save_diagnostic as any;
 		if (originalSave?.execute) {
 			const origExecute = originalSave.execute;
-			originalSave.execute = async (input: Record<string, unknown>, options: unknown) => {
+			originalSave.execute = async (
+				input: Record<string, unknown>,
+				options: unknown,
+			) => {
 				savedReport = input.report as string;
 				savedMeta = {
 					id: input.id,
@@ -740,10 +740,7 @@ async function runDiagnostic(domain: string): Promise<string | null> {
 			stopWhen: stepCountIs(50),
 			onStepFinish: ({ text }) => {
 				if (text) {
-					log(
-						slug,
-						`text: ${text.slice(0, 80).replace(/\n/g, " ")}...`,
-					);
+					log(slug, `text: ${text.slice(0, 80).replace(/\n/g, " ")}...`);
 				}
 			},
 		});
@@ -762,9 +759,7 @@ async function runDiagnostic(domain: string): Promise<string | null> {
 			return report;
 		}
 
-		throw new Error(
-			"save_diagnostic tool was not called — no report produced",
-		);
+		throw new Error("save_diagnostic tool was not called — no report produced");
 	} catch (error) {
 		const msg = error instanceof Error ? error.message : String(error);
 		log(slug, `ERROR in diagnostic: ${msg}`);
@@ -817,7 +812,10 @@ async function createSlideDeck(
 					CallToolResultSchema,
 					{ timeout: 30_000 },
 				);
-				log(slug, `Brand imported and saved: ${brandId} (logo: ${brandLogoUrl ?? "none"})`);
+				log(
+					slug,
+					`Brand imported and saved: ${brandId} (logo: ${brandLogoUrl ?? "none"})`,
+				);
 			}
 		} catch (e) {
 			log(slug, `Brand import failed, proceeding without: ${e}`);
@@ -832,7 +830,10 @@ async function createSlideDeck(
 				const orig = tools[toolName] as any;
 				if (!orig?.execute) continue;
 				const origExecute = orig.execute;
-				orig.execute = async (input: Record<string, unknown>, options: unknown) => {
+				orig.execute = async (
+					input: Record<string, unknown>,
+					options: unknown,
+				) => {
 					// Clone and inject brandId — AI SDK may freeze the input object
 					const patched = JSON.parse(JSON.stringify(input));
 					if (patched.deck && typeof patched.deck === "object") {
