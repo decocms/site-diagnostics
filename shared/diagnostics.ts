@@ -47,8 +47,8 @@ CONCISION:
 
 <report-language>
 Write in the language matching the site's market:
-- .br → Brazilian Portuguese (pt-BR). .mx/.ar/.co/.cl/.es → Spanish.
-- .com with non-English content → match that language. Otherwise → English.
+- .br → Brazilian Portuguese (pt-BR).
+- Everything else → English.
 Applies to all prose, headers, tables, pitch, strategic context.
 Technical terms (JSON-LD, TTFB, CDN, CWV, SSR) stay in English.
 Brand names, tool names ("deco", "AI Agents"), benchmark sources stay in English.
@@ -485,7 +485,7 @@ Domain Signals {X}/10"
 <checklist>
 Before writing output, verify compliance. Violations observed in past runs are marked *.
 
-1. LANGUAGE: .br → pt-BR. .com → English. No exceptions.
+1. LANGUAGE: .br → pt-BR. Everything else → English. No exceptions.
 2. NO EMOJIS anywhere.
 3. STRUCTURE: Follow <report-template> exactly. No invented sections.
 4. NO PACE CLAIMS about agencies or SIs. No sprint plans. No pricing.
