@@ -1,11 +1,6 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import {
-	findLocalChromium,
-	getBrowserlessToken,
-	getBrowserMode,
-	getHttpBaseUrl,
-} from "../lib/browserless.ts";
+import { findLocalChromium, getBrowserMode } from "../lib/browserless.ts";
 import { urlInput } from "../lib/schemas.ts";
 import type { Env } from "../types/env.ts";
 
@@ -81,6 +76,46 @@ const DIAGNOSTIC_AUDIT_IDS = [
 	"font-display",
 	"third-party-summary",
 ] as const;
+
+const LIGHTHOUSE_BROWSERLESS_ENDPOINT =
+	process.env.LIGHTHOUSE_BROWSERLESS_ENDPOINT ??
+	process.env.BROWSERLESS_ENDPOINT ??
+	"wss://production-sfo.browserless.io";
+
+function getLighthouseHttpBaseUrl(): string {
+	return LIGHTHOUSE_BROWSERLESS_ENDPOINT.replace(/^wss:/, "https:").replace(
+		/^ws:/,
+		"http:",
+	);
+}
+
+function getLighthouseBrowserlessToken(): string {
+	const token =
+		process.env.LIGHTHOUSE_BROWSERLESS_TOKEN ?? process.env.BROWSERLESS_TOKEN;
+	if (!token) {
+		throw new Error(
+			"LIGHTHOUSE_BROWSERLESS_TOKEN or BROWSERLESS_TOKEN environment variable is required for remote Lighthouse",
+		);
+	}
+	return token;
+}
+
+function getLighthouseMode(): "browserless" | "local" | "none" {
+	const override = process.env.LIGHTHOUSE_BROWSER_MODE;
+
+	if (override === "remote" || override === "browserless") {
+		return "browserless";
+	}
+
+	if (override === "local") {
+		return findLocalChromium() ? "local" : "none";
+	}
+
+	const mode = getBrowserMode();
+	if (mode === "remote") return "browserless";
+	if (mode === "local") return "local";
+	return "none";
+}
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -178,8 +213,8 @@ async function runRemoteLighthouse(
 	device: "desktop" | "mobile",
 	// biome-ignore lint/suspicious/noExplicitAny: Lighthouse JSON is untyped
 ): Promise<Record<string, any>> {
-	const token = getBrowserlessToken();
-	const baseUrl = getHttpBaseUrl();
+	const token = getLighthouseBrowserlessToken();
+	const baseUrl = getLighthouseHttpBaseUrl();
 
 	const isDesktop = device === "desktop";
 	const settings: Record<string, unknown> = {
@@ -328,21 +363,21 @@ export const lighthouseTool = (_env: Env) =>
 			const { url, categories, device } = context;
 
 			try {
-				const mode = getBrowserMode();
+				let result: Record<string, unknown>;
+				let usedMode: "browserless" | "local";
+
+				const mode = getLighthouseMode();
 
 				if (mode === "none") {
 					return errorResult(
 						url,
 						device,
 						"local",
-						"No browser available. Set BROWSERLESS_TOKEN or run: npx playwright install chromium",
+						"No browser available. Set LIGHTHOUSE_BROWSER_MODE=remote with LIGHTHOUSE_BROWSERLESS_TOKEN, set BROWSERLESS_TOKEN, or run: npx playwright install chromium",
 					);
 				}
 
-				let result: Record<string, unknown>;
-				let usedMode: "browserless" | "local";
-
-				if (mode === "remote") {
+				if (mode === "browserless") {
 					result = await runRemoteLighthouse(url, categories, device);
 					usedMode = "browserless";
 				} else {
@@ -354,7 +389,7 @@ export const lighthouseTool = (_env: Env) =>
 			} catch (error) {
 				const msg = error instanceof Error ? error.message : String(error);
 				const usedMode: "browserless" | "local" =
-					getBrowserMode() === "remote" ? "browserless" : "local";
+					getLighthouseMode() === "browserless" ? "browserless" : "local";
 				return errorResult(
 					url,
 					device,
