@@ -10,6 +10,20 @@ import type { Env } from "../types/env.ts";
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
+/** WAF / bot-protection patterns: [regex, provider label] */
+const WAF_PATTERNS: [RegExp, string][] = [
+	[/access denied/i, "Akamai"],
+	[/attention required.*cloudflare/i, "Cloudflare"],
+	[/checking your browser/i, "Cloudflare"],
+	[/just a moment\.\.\./i, "Cloudflare"],
+	[/403 forbidden/i, "WAF"],
+	[/you have been blocked/i, "WAF"],
+	[/blocked.*web application firewall/i, "WAF"],
+	[/pardon our interruption/i, "Incapsula"],
+	[/please verify you are a human/i, "Bot Protection"],
+	[/security check/i, "Bot Protection"],
+];
+
 // ── Schemas ────────────────────────────────────────────────
 
 export const screenshotInputSchema = z.object({
@@ -37,6 +51,8 @@ export const screenshotOutputSchema = z.object({
 	device: z.enum(["desktop", "mobile"]),
 	sizeKB: z.number().optional(),
 	imageUrl: z.string().optional(),
+	blocked: z.boolean().optional(),
+	blockedBy: z.string().optional(),
 	error: z.string().optional(),
 });
 
@@ -64,16 +80,39 @@ export const screenshotTool = (_env: Env) =>
 				const endpoint = resolveBrowserEndpoint();
 				const parsedUrl = new URL(url);
 
-				const buf = await withBrowserPage(
+				const result = await withBrowserPage(
 					endpoint,
 					device,
 					async (page) => {
 						await page.goto(url, { waitUntil, timeout });
+
+						// Detect WAF / bot-protection pages before screenshotting
+						const wafProvider: string | null = await page.evaluate(
+							(...patterns: string[][]) => {
+								const title = document.title.toLowerCase();
+								const body =
+									document.body?.innerText?.slice(0, 2000).toLowerCase() ?? "";
+								const text = `${title} ${body}`;
+								for (const [reStr, provider] of patterns) {
+									if (new RegExp(reStr, "i").test(text)) return provider;
+								}
+								return null;
+							},
+							...WAF_PATTERNS.map(([re, label]) => [re.source, label]),
+						);
+
+						if (wafProvider) {
+							return { kind: "blocked" as const, blockedBy: wafProvider };
+						}
+
 						const screenshot = await page.screenshot({
 							type: "png",
 							fullPage,
 						});
-						return Buffer.from(screenshot);
+						return {
+							kind: "screenshot" as const,
+							buffer: Buffer.from(screenshot),
+						};
 					},
 					{
 						cookies,
@@ -81,6 +120,17 @@ export const screenshotTool = (_env: Env) =>
 					},
 				);
 
+				if (result.kind === "blocked") {
+					return {
+						url,
+						device,
+						blocked: true,
+						blockedBy: result.blockedBy,
+						error: `Page blocked by ${result.blockedBy} — screenshot shows a WAF page, not actual content`,
+					};
+				}
+
+				const buf = result.buffer;
 				if (buf.length > MAX_SIZE_BYTES) {
 					return {
 						url,

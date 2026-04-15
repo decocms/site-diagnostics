@@ -6,6 +6,8 @@
  *
  * Usage:
  *   bun scripts/batch-diagnostics.ts domains.csv
+ *   bun scripts/batch-diagnostics.ts domains.csv --diagnostics-only
+ *   bun scripts/batch-diagnostics.ts domains.csv --local
  *
  * CSV format (one column, no header):
  *   https://www.example.com
@@ -27,21 +29,36 @@ import type { JSONSchema7 } from "@ai-sdk/provider";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { CallToolResultSchema } from "@modelcontextprotocol/sdk/types.js";
-import { jsonSchema, stepCountIs, streamText, type ToolSet, tool } from "ai";
+import {
+	generateText,
+	jsonSchema,
+	stepCountIs,
+	streamText,
+	type ToolSet,
+	tool,
+} from "ai";
 
 // ── Config ────────────────────────────────────────────────────
+
+const DIAGNOSTICS_ONLY = process.argv.includes("--diagnostics-only");
+const LOCAL = process.argv.includes("--local");
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is required");
 
 const SLIDE_MAKER_TOKEN = process.env.SLIDE_MAKER_TOKEN;
-if (!SLIDE_MAKER_TOKEN) throw new Error("SLIDE_MAKER_TOKEN is required");
+if (!SLIDE_MAKER_TOKEN && !DIAGNOSTICS_ONLY && !LOCAL)
+	throw new Error("SLIDE_MAKER_TOKEN is required (or use --diagnostics-only)");
 
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 8);
 const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./batch-output";
 
-const SITE_DIAGNOSTICS_MCP = "https://site-diagnostics.decocms.com/api/mcp";
-const SLIDE_MAKER_MCP = "https://slide-maker.decocms.com/api/mcp";
+const SITE_DIAGNOSTICS_MCP = LOCAL
+	? "http://localhost:3002/api/mcp"
+	: "https://site-diagnostics.decocms.com/api/mcp";
+const SLIDE_MAKER_MCP = LOCAL
+	? "http://localhost:3001/api/mcp"
+	: "https://slide-maker.decocms.com/api/mcp";
 
 // ── Prompts (replace with your actual prompts) ────────────────
 
@@ -478,7 +495,7 @@ CATALOG SIZE: Measured from sitemaps = fact. From crawl_site = stated with crawl
   Never extrapolate. Every catalog reference uses the same number from the same source.
 
 BENCHMARKS — safe list (pre-vetted, use freely):
-  * "Every 1s load time improvement ≈ 5% conversion uplift" (Deloitte, 2020)
+  * "Every 0.1s mobile speed improvement → +8.4% conversion (retail), +10.1% (travel)" (Deloitte, "Milliseconds Make Millions", 2020, 37 brands, 30M sessions)
   * "Product recommendations drive 10-30% of e-commerce revenue" (McKinsey)
   * "Rich snippets increase CTR by 20-40%" (Search Engine Journal / Ahrefs)
   * "Products with 50+ reviews convert at 2-3x vs. zero reviews" (Bazaarvoice / Spiegel)
@@ -684,6 +701,24 @@ function domainSlug(url: string): string {
 	}
 }
 
+/** Extract JSON from model output that may be wrapped in markdown fences or preamble. */
+function parseJsonResponse(text: string): unknown {
+	// Try raw parse first
+	const trimmed = text.trim();
+	try {
+		return JSON.parse(trimmed);
+	} catch {
+		// Strip markdown fences: ```json ... ``` or ``` ... ```
+		const fenced = trimmed.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+		if (fenced) return JSON.parse(fenced[1].trim());
+
+		// Find first { or [ and extract to matching close
+		const start = trimmed.search(/[{[]/);
+		if (start === -1) throw new SyntaxError("No JSON found in model response");
+		return JSON.parse(trimmed.slice(start));
+	}
+}
+
 function log(domain: string, msg: string) {
 	const ts = new Date().toISOString().slice(11, 19);
 	console.log(`[${ts}] [${domain}] ${msg}`);
@@ -785,9 +820,12 @@ async function createSlideDeck(
 	}
 
 	log(slug, "Creating slide deck...");
-	const mcpClient = await connectMcp(SLIDE_MAKER_MCP, {
-		Authorization: `Bearer ${SLIDE_MAKER_TOKEN}`,
-	});
+	const mcpClient = await connectMcp(
+		SLIDE_MAKER_MCP,
+		SLIDE_MAKER_TOKEN
+			? { Authorization: `Bearer ${SLIDE_MAKER_TOKEN}` }
+			: undefined,
+	);
 
 	try {
 		// Import brand deterministically — inject brandId into tool calls
@@ -876,13 +914,158 @@ async function createSlideDeck(
 	}
 }
 
+// ── Step 2.5: Post-Generation Validator ───────────────────────
+
+const VALIDATOR_PROMPT = `You are a quality-control reviewer for auto-generated site diagnostic reports.
+
+Check the report for these specific issues ONLY:
+
+1. **DELOITTE_MISQUOTE** — Any mention of "every 1 second" or "5% conversion uplift" attributed to Deloitte. The real stat is per 0.1s, sector-specific (8.4% retail, 10.1% travel).
+2. **WAF_SCREENSHOT** — References to screenshots that actually show WAF/bot-protection pages (Akamai "Access Denied", Cloudflare challenge, 403 Forbidden, etc.) presented as real site content.
+3. **UNVERIFIED_FINANCIALS** — Specific revenue, GMV, or valuation figures without a source (e.g., "Company X generates $2B in revenue" with no citation).
+4. **WEAK_SOURCES** — YouTube videos, Wikipedia, or generic blog posts cited as business intelligence or industry benchmarks.
+5. **CURRENCY_CONFUSION** — Mixing up "billones" (Spanish = trillions) with "billions", or using wrong currency units for LATAM companies.
+6. **SISTER_BRAND_COMPETITOR** — Listing a brand owned by the same parent company as a competitor.
+7. **OVERLY_SPECIFIC_UNVERIFIED** — Very precise unverified claims (e.g., "37.2% of users abandon…") that look hallucinated — round numbers with sources are fine, suspiciously precise numbers without sources are not.
+
+For each issue found, return:
+- check: the check ID from the list above
+- severity: "high" | "medium" | "low"
+- location: a short quote from the report where the issue appears
+- explanation: why this is wrong
+
+Respond with ONLY valid JSON, no markdown fences:
+{
+  "issues": [ { "check": "...", "severity": "...", "location": "...", "explanation": "..." } ],
+  "passed": [ "CHECK_IDS that passed..." ],
+  "summary": "one-sentence overall assessment"
+}`;
+
+const FIXER_PROMPT = `You are a copy-editor fixing flagged issues in a site diagnostic report.
+
+You will receive the original report and a list of issues found by a quality reviewer.
+Apply targeted fixes for each issue:
+
+- **DELOITTE_MISQUOTE**: Replace with the correct stat: "Every 0.1s mobile speed improvement → +8.4% conversion (retail), +10.1% (travel)" (Deloitte, "Milliseconds Make Millions", 2020).
+- **WAF_SCREENSHOT**: Remove or replace references to WAF-blocked screenshots. If the screenshot was used as evidence, note that the page was behind a WAF and the screenshot could not be captured.
+- **UNVERIFIED_FINANCIALS**: Add a qualifier like "estimated" or "reported by [source]", or remove the claim if no reasonable source exists.
+- **WEAK_SOURCES**: Replace with a stronger source if obvious, otherwise remove the citation and soften the claim.
+- **CURRENCY_CONFUSION**: Fix the currency unit/conversion.
+- **SISTER_BRAND_COMPETITOR**: Remove the brand from the competitor list and replace with a real competitor if obvious, otherwise just remove it.
+- **OVERLY_SPECIFIC_UNVERIFIED**: Round the number or add a qualifier ("approximately", "industry estimates suggest").
+
+Rules:
+- Make minimal, surgical edits — do not rewrite sections that have no issues.
+- Preserve the original language (English, Portuguese, Spanish, etc.).
+- Preserve all markdown formatting.
+
+Respond with ONLY valid JSON, no markdown fences:
+{
+  "edits": [
+    { "check": "ISSUE_ID", "original": "exact text replaced", "fixed": "replacement text", "rationale": "why" }
+  ],
+  "fixedReport": "the full report with all fixes applied"
+}`;
+
+async function runValidator(domain: string, report: string): Promise<string> {
+	const slug = domainSlug(domain);
+	const reviewPath = join(OUTPUT_DIR, `${slug}-diagnostic-review.json`);
+
+	// Idempotent — skip if already reviewed
+	if (existsSync(reviewPath)) {
+		log(slug, "Review already exists, skipping validator");
+		return report;
+	}
+
+	log(slug, "Running quality validator...");
+
+	try {
+		// Step 1: Find issues
+		const reviewResult = await generateText({
+			model: anthropic("claude-sonnet-4-6"),
+			system: VALIDATOR_PROMPT,
+			messages: [
+				{
+					role: "user",
+					content: `Review this diagnostic report for ${domain}:\n\n${report}`,
+				},
+			],
+		});
+
+		const review = parseJsonResponse(reviewResult.text) as Record<
+			string,
+			unknown
+		>;
+		const issues: unknown[] = review.issues ?? [];
+
+		if (issues.length === 0) {
+			writeFileSync(
+				reviewPath,
+				JSON.stringify({ ...review, edits: [], fixed: false }, null, "\t"),
+			);
+			log(slug, `Validator passed: ${review.summary}`);
+			return report;
+		}
+
+		log(
+			slug,
+			`Validator found ${issues.length} issue(s), fixing: ${review.summary}`,
+		);
+
+		// Step 2: Fix issues
+		const fixResult = await generateText({
+			model: anthropic("claude-sonnet-4-6"),
+			system: FIXER_PROMPT,
+			messages: [
+				{
+					role: "user",
+					content: `Here is the report:\n\n${report}\n\n---\n\nHere are the issues to fix:\n\n${JSON.stringify(issues, null, 2)}`,
+				},
+			],
+		});
+
+		const fix = parseJsonResponse(fixResult.text) as Record<string, unknown>;
+		const fixedReport: string = fix.fixedReport ?? report;
+		const edits: unknown[] = fix.edits ?? [];
+
+		// Save original as backup
+		const originalPath = join(OUTPUT_DIR, `${slug}-diagnostic-original.md`);
+		const reportPath = join(OUTPUT_DIR, `${slug}-diagnostic.md`);
+		writeFileSync(originalPath, report);
+		writeFileSync(reportPath, fixedReport);
+
+		// Save review with edits for auditing
+		writeFileSync(
+			reviewPath,
+			JSON.stringify(
+				{ ...review, edits, fixed: true, editCount: edits.length },
+				null,
+				"\t",
+			),
+		);
+
+		log(
+			slug,
+			`Applied ${edits.length} fix(es), original saved as -original.md`,
+		);
+		return fixedReport;
+	} catch (error) {
+		const msg = error instanceof Error ? error.message : String(error);
+		log(slug, `Validator error (non-blocking): ${msg}`);
+		return report;
+	}
+}
+
 // ── Pipeline ──────────────────────────────────────────────────
 
 async function processDomain(domain: string): Promise<void> {
 	const diagnostic = await runDiagnostic(domain);
 	if (!diagnostic) return;
 
-	await createSlideDeck(domain, diagnostic);
+	const reviewed = await runValidator(domain, diagnostic);
+	if (!DIAGNOSTICS_ONLY) {
+		await createSlideDeck(domain, reviewed);
+	}
 }
 
 async function runBatch(domains: string[]) {
@@ -901,15 +1084,22 @@ async function runBatch(domains: string[]) {
 
 // ── Main ──────────────────────────────────────────────────────
 
-const csvPath = process.argv[2];
+const csvPath = process.argv.find(
+	(a) => !a.startsWith("-") && a !== process.argv[0] && a !== process.argv[1],
+);
 if (!csvPath) {
-	console.error("Usage: bun scripts/batch-diagnostics.ts <domains.csv>");
+	console.error(
+		"Usage: bun scripts/batch-diagnostics.ts <domains.csv> [--diagnostics-only] [--local]",
+	);
 	process.exit(1);
 }
 
 const domains = readDomains(csvPath);
 console.log(`Loaded ${domains.length} domains from ${csvPath}`);
 console.log(`Concurrency: ${CONCURRENCY}`);
+console.log(
+	`Mode: ${DIAGNOSTICS_ONLY ? "diagnostics only" : "diagnostics + slides"}${LOCAL ? " (local)" : ""}`,
+);
 console.log(`Output: ${OUTPUT_DIR}\n`);
 
 mkdirSync(OUTPUT_DIR, { recursive: true });
