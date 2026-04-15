@@ -6,6 +6,7 @@
  *
  * Usage:
  *   bun scripts/batch-diagnostics.ts domains.csv
+ *   bun scripts/batch-diagnostics.ts domains.csv --diagnostics-only
  *
  * CSV format (one column, no header):
  *   https://www.example.com
@@ -38,11 +39,14 @@ import {
 
 // ── Config ────────────────────────────────────────────────────
 
+const DIAGNOSTICS_ONLY = process.argv.includes("--diagnostics-only");
+
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is required");
 
 const SLIDE_MAKER_TOKEN = process.env.SLIDE_MAKER_TOKEN;
-if (!SLIDE_MAKER_TOKEN) throw new Error("SLIDE_MAKER_TOKEN is required");
+if (!SLIDE_MAKER_TOKEN && !DIAGNOSTICS_ONLY)
+	throw new Error("SLIDE_MAKER_TOKEN is required (or use --diagnostics-only)");
 
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 8);
 const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./batch-output";
@@ -957,7 +961,9 @@ async function processDomain(domain: string): Promise<void> {
 	if (!diagnostic) return;
 
 	await runValidator(domain, diagnostic);
-	await createSlideDeck(domain, diagnostic);
+	if (!DIAGNOSTICS_ONLY) {
+		await createSlideDeck(domain, diagnostic);
+	}
 }
 
 async function runBatch(domains: string[]) {
@@ -976,15 +982,22 @@ async function runBatch(domains: string[]) {
 
 // ── Main ──────────────────────────────────────────────────────
 
-const csvPath = process.argv[2];
+const csvPath = process.argv.find(
+	(a) => !a.startsWith("-") && a !== process.argv[0] && a !== process.argv[1],
+);
 if (!csvPath) {
-	console.error("Usage: bun scripts/batch-diagnostics.ts <domains.csv>");
+	console.error(
+		"Usage: bun scripts/batch-diagnostics.ts <domains.csv> [--diagnostics-only]",
+	);
 	process.exit(1);
 }
 
 const domains = readDomains(csvPath);
 console.log(`Loaded ${domains.length} domains from ${csvPath}`);
 console.log(`Concurrency: ${CONCURRENCY}`);
+console.log(
+	`Mode: ${DIAGNOSTICS_ONLY ? "diagnostics only" : "diagnostics + slides"}`,
+);
 console.log(`Output: ${OUTPUT_DIR}\n`);
 
 mkdirSync(OUTPUT_DIR, { recursive: true });
