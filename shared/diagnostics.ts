@@ -424,7 +424,7 @@ CATALOG SIZE: Measured from sitemaps = fact. From crawl_site = stated with crawl
   Never extrapolate. Every catalog reference uses the same number from the same source.
 
 BENCHMARKS — safe list (pre-vetted, use freely):
-  * "Every 1s load time improvement ≈ 5% conversion uplift" (Deloitte, 2020)
+  * "Every 0.1s mobile speed improvement → +8.4% conversion (retail), +10.1% (travel)" (Deloitte, "Milliseconds Make Millions", 2020, 37 brands, 30M sessions)
   * "Product recommendations drive 10-30% of e-commerce revenue" (McKinsey)
   * "Rich snippets increase CTR by 20-40%" (Search Engine Journal / Ahrefs)
   * "Products with 50+ reviews convert at 2-3x vs. zero reviews" (Bazaarvoice / Spiegel)

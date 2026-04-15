@@ -27,7 +27,14 @@ import type { JSONSchema7 } from "@ai-sdk/provider";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { CallToolResultSchema } from "@modelcontextprotocol/sdk/types.js";
-import { jsonSchema, stepCountIs, streamText, type ToolSet, tool } from "ai";
+import {
+	generateText,
+	jsonSchema,
+	stepCountIs,
+	streamText,
+	type ToolSet,
+	tool,
+} from "ai";
 
 // ── Config ────────────────────────────────────────────────────
 
@@ -478,7 +485,7 @@ CATALOG SIZE: Measured from sitemaps = fact. From crawl_site = stated with crawl
   Never extrapolate. Every catalog reference uses the same number from the same source.
 
 BENCHMARKS — safe list (pre-vetted, use freely):
-  * "Every 1s load time improvement ≈ 5% conversion uplift" (Deloitte, 2020)
+  * "Every 0.1s mobile speed improvement → +8.4% conversion (retail), +10.1% (travel)" (Deloitte, "Milliseconds Make Millions", 2020, 37 brands, 30M sessions)
   * "Product recommendations drive 10-30% of e-commerce revenue" (McKinsey)
   * "Rich snippets increase CTR by 20-40%" (Search Engine Journal / Ahrefs)
   * "Products with 50+ reviews convert at 2-3x vs. zero reviews" (Bazaarvoice / Spiegel)
@@ -876,12 +883,80 @@ async function createSlideDeck(
 	}
 }
 
+// ── Step 2.5: Post-Generation Validator ───────────────────────
+
+const VALIDATOR_PROMPT = `You are a quality-control reviewer for auto-generated site diagnostic reports.
+
+Check the report for these specific issues ONLY:
+
+1. **DELOITTE_MISQUOTE** — Any mention of "every 1 second" or "5% conversion uplift" attributed to Deloitte. The real stat is per 0.1s, sector-specific (8.4% retail, 10.1% travel).
+2. **WAF_SCREENSHOT** — References to screenshots that actually show WAF/bot-protection pages (Akamai "Access Denied", Cloudflare challenge, 403 Forbidden, etc.) presented as real site content.
+3. **UNVERIFIED_FINANCIALS** — Specific revenue, GMV, or valuation figures without a source (e.g., "Company X generates $2B in revenue" with no citation).
+4. **WEAK_SOURCES** — YouTube videos, Wikipedia, or generic blog posts cited as business intelligence or industry benchmarks.
+5. **CURRENCY_CONFUSION** — Mixing up "billones" (Spanish = trillions) with "billions", or using wrong currency units for LATAM companies.
+6. **SISTER_BRAND_COMPETITOR** — Listing a brand owned by the same parent company as a competitor.
+7. **OVERLY_SPECIFIC_UNVERIFIED** — Very precise unverified claims (e.g., "37.2% of users abandon…") that look hallucinated — round numbers with sources are fine, suspiciously precise numbers without sources are not.
+
+For each issue found, return:
+- check: the check ID from the list above
+- severity: "high" | "medium" | "low"
+- location: a short quote from the report where the issue appears
+- explanation: why this is wrong
+
+Respond with ONLY valid JSON, no markdown fences:
+{
+  "issues": [ { "check": "...", "severity": "...", "location": "...", "explanation": "..." } ],
+  "passed": [ "CHECK_IDS that passed..." ],
+  "summary": "one-sentence overall assessment"
+}`;
+
+async function runValidator(domain: string, report: string): Promise<void> {
+	const slug = domainSlug(domain);
+	const reviewPath = join(OUTPUT_DIR, `${slug}-diagnostic-review.json`);
+
+	// Idempotent — skip if already reviewed
+	if (existsSync(reviewPath)) {
+		log(slug, "Review already exists, skipping validator");
+		return;
+	}
+
+	log(slug, "Running quality validator...");
+
+	try {
+		const result = await generateText({
+			model: anthropic("claude-sonnet-4-6"),
+			system: VALIDATOR_PROMPT,
+			messages: [
+				{
+					role: "user",
+					content: `Review this diagnostic report for ${domain}:\n\n${report}`,
+				},
+			],
+		});
+
+		const review = JSON.parse(result.text);
+		writeFileSync(reviewPath, JSON.stringify(review, null, "\t"));
+
+		const issueCount = review.issues?.length ?? 0;
+		log(
+			slug,
+			issueCount > 0
+				? `Validator found ${issueCount} issue(s): ${review.summary}`
+				: `Validator passed: ${review.summary}`,
+		);
+	} catch (error) {
+		const msg = error instanceof Error ? error.message : String(error);
+		log(slug, `Validator error (non-blocking): ${msg}`);
+	}
+}
+
 // ── Pipeline ──────────────────────────────────────────────────
 
 async function processDomain(domain: string): Promise<void> {
 	const diagnostic = await runDiagnostic(domain);
 	if (!diagnostic) return;
 
+	await runValidator(domain, diagnostic);
 	await createSlideDeck(domain, diagnostic);
 }
 
