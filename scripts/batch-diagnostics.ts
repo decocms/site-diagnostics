@@ -7,6 +7,7 @@
  * Usage:
  *   bun scripts/batch-diagnostics.ts domains.csv
  *   bun scripts/batch-diagnostics.ts domains.csv --diagnostics-only
+ *   bun scripts/batch-diagnostics.ts domains.csv --local
  *
  * CSV format (one column, no header):
  *   https://www.example.com
@@ -40,19 +41,24 @@ import {
 // ── Config ────────────────────────────────────────────────────
 
 const DIAGNOSTICS_ONLY = process.argv.includes("--diagnostics-only");
+const LOCAL = process.argv.includes("--local");
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is required");
 
 const SLIDE_MAKER_TOKEN = process.env.SLIDE_MAKER_TOKEN;
-if (!SLIDE_MAKER_TOKEN && !DIAGNOSTICS_ONLY)
+if (!SLIDE_MAKER_TOKEN && !DIAGNOSTICS_ONLY && !LOCAL)
 	throw new Error("SLIDE_MAKER_TOKEN is required (or use --diagnostics-only)");
 
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 8);
 const OUTPUT_DIR = process.env.OUTPUT_DIR ?? "./batch-output";
 
-const SITE_DIAGNOSTICS_MCP = "https://site-diagnostics.decocms.com/api/mcp";
-const SLIDE_MAKER_MCP = "https://slide-maker.decocms.com/api/mcp";
+const SITE_DIAGNOSTICS_MCP = LOCAL
+	? "http://localhost:3002/api/mcp"
+	: "https://site-diagnostics.decocms.com/api/mcp";
+const SLIDE_MAKER_MCP = LOCAL
+	? "http://localhost:3001/api/mcp"
+	: "https://slide-maker.decocms.com/api/mcp";
 
 // ── Prompts (replace with your actual prompts) ────────────────
 
@@ -987,7 +993,7 @@ const csvPath = process.argv.find(
 );
 if (!csvPath) {
 	console.error(
-		"Usage: bun scripts/batch-diagnostics.ts <domains.csv> [--diagnostics-only]",
+		"Usage: bun scripts/batch-diagnostics.ts <domains.csv> [--diagnostics-only] [--local]",
 	);
 	process.exit(1);
 }
@@ -996,7 +1002,7 @@ const domains = readDomains(csvPath);
 console.log(`Loaded ${domains.length} domains from ${csvPath}`);
 console.log(`Concurrency: ${CONCURRENCY}`);
 console.log(
-	`Mode: ${DIAGNOSTICS_ONLY ? "diagnostics only" : "diagnostics + slides"}`,
+	`Mode: ${DIAGNOSTICS_ONLY ? "diagnostics only" : "diagnostics + slides"}${LOCAL ? " (local)" : ""}`,
 );
 console.log(`Output: ${OUTPUT_DIR}\n`);
 
