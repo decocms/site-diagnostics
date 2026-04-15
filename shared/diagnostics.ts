@@ -425,13 +425,11 @@ CATALOG SIZE: Measured from sitemaps = fact. From crawl_site = stated with crawl
 
 BENCHMARKS — safe list (pre-vetted, use freely):
   * "Every 0.1s mobile speed improvement → +8.4% conversion (retail), +10.1% (travel)" (Deloitte, "Milliseconds Make Millions", 2020, 37 brands, 30M sessions)
-  * "Product recommendations drive 10-30% of e-commerce revenue" (McKinsey)
-  * "Rich snippets increase CTR by 20-40%" (Search Engine Journal / Ahrefs)
-  * "Products with 50+ reviews convert at 2-3x vs. zero reviews" (Bazaarvoice / Spiegel)
-  * "Unique product descriptions increase organic traffic per PDP by 30-50%" (Ahrefs)
-  * "Post-purchase review request emails: 5-15% response rate" (industry average)
-  * "Average AOV uplift with cross-sell: 8-15%" (Baymard Institute)
-  * "Companies with active blogs generate ~55% more visitors" (HubSpot)
+  * "Personalization (including product recommendations) drives 5-15% revenue lift" (McKinsey, "The value of getting personalization right—or wrong—is multiplying", 2021)
+  * "Implementing structured data (rich snippets) typically increases organic CTR by 20-30%" (Milestone Research, 4.5M queries; SearchPilot A/B tests)
+  * "Products with 5+ reviews see purchase likelihood increase by 270% vs. zero reviews" (Spiegel Research Center, Northwestern, 2017, 57K reviews, 13.5K products)
+  * "Post-purchase review request emails: 3-10% response rate, above 10% is high-performing" (review platform benchmarks — Yotpo, PowerReviews)
+  * "Companies with active blogs generate ~55% more visitors" (HubSpot, correlational, SMB customer sample — use directionally, not as precise benchmark)
   Any benchmark not on this list must be attributed to a verifiable source.
   If unsure, use a range. Never invent a stat and attribute it to a real source.
 

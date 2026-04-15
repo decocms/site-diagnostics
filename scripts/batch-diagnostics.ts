@@ -496,13 +496,11 @@ CATALOG SIZE: Measured from sitemaps = fact. From crawl_site = stated with crawl
 
 BENCHMARKS — safe list (pre-vetted, use freely):
   * "Every 0.1s mobile speed improvement → +8.4% conversion (retail), +10.1% (travel)" (Deloitte, "Milliseconds Make Millions", 2020, 37 brands, 30M sessions)
-  * "Product recommendations drive 10-30% of e-commerce revenue" (McKinsey)
-  * "Rich snippets increase CTR by 20-40%" (Search Engine Journal / Ahrefs)
-  * "Products with 50+ reviews convert at 2-3x vs. zero reviews" (Bazaarvoice / Spiegel)
-  * "Unique product descriptions increase organic traffic per PDP by 30-50%" (Ahrefs)
-  * "Post-purchase review request emails: 5-15% response rate" (industry average)
-  * "Average AOV uplift with cross-sell: 8-15%" (Baymard Institute)
-  * "Companies with active blogs generate ~55% more visitors" (HubSpot)
+  * "Personalization (including product recommendations) drives 5-15% revenue lift" (McKinsey, "The value of getting personalization right—or wrong—is multiplying", 2021)
+  * "Implementing structured data (rich snippets) typically increases organic CTR by 20-30%" (Milestone Research, 4.5M queries; SearchPilot A/B tests)
+  * "Products with 5+ reviews see purchase likelihood increase by 270% vs. zero reviews" (Spiegel Research Center, Northwestern, 2017, 57K reviews, 13.5K products)
+  * "Post-purchase review request emails: 3-10% response rate, above 10% is high-performing" (review platform benchmarks — Yotpo, PowerReviews)
+  * "Companies with active blogs generate ~55% more visitors" (HubSpot, correlational, SMB customer sample — use directionally, not as precise benchmark)
   Any benchmark not on this list must be attributed to a verifiable source.
   If unsure, use a range. Never invent a stat and attribute it to a real source.
 
@@ -927,6 +925,7 @@ Check the report for these specific issues ONLY:
 5. **CURRENCY_CONFUSION** — Mixing up "billones" (Spanish = trillions) with "billions", or using wrong currency units for LATAM companies.
 6. **SISTER_BRAND_COMPETITOR** — Listing a brand owned by the same parent company as a competitor.
 7. **OVERLY_SPECIFIC_UNVERIFIED** — Very precise unverified claims (e.g., "37.2% of users abandon…") that look hallucinated — round numbers with sources are fine, suspiciously precise numbers without sources are not.
+8. **FABRICATED_BENCHMARK** — Any of these debunked stats: "10-30% of e-commerce revenue from recommendations" (McKinsey never said this), "50+ reviews convert at 2-3x" (Spiegel found 5 reviews = 270%, not 50+), "unique descriptions increase traffic by 30-50%" (never published by Ahrefs), "AOV uplift with cross-sell 8-15%" (never published by Baymard). Flag any of these even if attributed differently.
 
 For each issue found, return:
 - check: the check ID from the list above
@@ -953,6 +952,7 @@ Apply targeted fixes for each issue:
 - **CURRENCY_CONFUSION**: Fix the currency unit/conversion.
 - **SISTER_BRAND_COMPETITOR**: Remove the brand from the competitor list and replace with a real competitor if obvious, otherwise just remove it.
 - **OVERLY_SPECIFIC_UNVERIFIED**: Round the number or add a qualifier ("approximately", "industry estimates suggest").
+- **FABRICATED_BENCHMARK**: Replace with the correct version. McKinsey: "Personalization drives 5-15% revenue lift" (2021). Spiegel: "Products with 5+ reviews see 270% higher purchase likelihood" (2017). Remove Ahrefs "30-50% traffic" and Baymard "8-15% AOV" claims entirely — no verified source exists.
 
 Rules:
 - Make minimal, surgical edits — do not rewrite sections that have no issues.
