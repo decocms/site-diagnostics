@@ -273,9 +273,9 @@ async function runLocalLighthouse(
 
 	const args = [
 		lighthouseBin,
-		"--",
 		url,
 		"--output=json",
+		"--output-path=stdout",
 		"--quiet",
 		`--chrome-flags=--headless --no-sandbox --disable-gpu`,
 		`--chrome-path=${chromePath}`,
