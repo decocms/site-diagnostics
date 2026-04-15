@@ -920,20 +920,47 @@ Respond with ONLY valid JSON, no markdown fences:
   "summary": "one-sentence overall assessment"
 }`;
 
-async function runValidator(domain: string, report: string): Promise<void> {
+const FIXER_PROMPT = `You are a copy-editor fixing flagged issues in a site diagnostic report.
+
+You will receive the original report and a list of issues found by a quality reviewer.
+Apply targeted fixes for each issue:
+
+- **DELOITTE_MISQUOTE**: Replace with the correct stat: "Every 0.1s mobile speed improvement → +8.4% conversion (retail), +10.1% (travel)" (Deloitte, "Milliseconds Make Millions", 2020).
+- **WAF_SCREENSHOT**: Remove or replace references to WAF-blocked screenshots. If the screenshot was used as evidence, note that the page was behind a WAF and the screenshot could not be captured.
+- **UNVERIFIED_FINANCIALS**: Add a qualifier like "estimated" or "reported by [source]", or remove the claim if no reasonable source exists.
+- **WEAK_SOURCES**: Replace with a stronger source if obvious, otherwise remove the citation and soften the claim.
+- **CURRENCY_CONFUSION**: Fix the currency unit/conversion.
+- **SISTER_BRAND_COMPETITOR**: Remove the brand from the competitor list and replace with a real competitor if obvious, otherwise just remove it.
+- **OVERLY_SPECIFIC_UNVERIFIED**: Round the number or add a qualifier ("approximately", "industry estimates suggest").
+
+Rules:
+- Make minimal, surgical edits — do not rewrite sections that have no issues.
+- Preserve the original language (English, Portuguese, Spanish, etc.).
+- Preserve all markdown formatting.
+
+Respond with ONLY valid JSON, no markdown fences:
+{
+  "edits": [
+    { "check": "ISSUE_ID", "original": "exact text replaced", "fixed": "replacement text", "rationale": "why" }
+  ],
+  "fixedReport": "the full report with all fixes applied"
+}`;
+
+async function runValidator(domain: string, report: string): Promise<string> {
 	const slug = domainSlug(domain);
 	const reviewPath = join(OUTPUT_DIR, `${slug}-diagnostic-review.json`);
 
 	// Idempotent — skip if already reviewed
 	if (existsSync(reviewPath)) {
 		log(slug, "Review already exists, skipping validator");
-		return;
+		return report;
 	}
 
 	log(slug, "Running quality validator...");
 
 	try {
-		const result = await generateText({
+		// Step 1: Find issues
+		const reviewResult = await generateText({
 			model: anthropic("claude-sonnet-4-6"),
 			system: VALIDATOR_PROMPT,
 			messages: [
@@ -944,19 +971,64 @@ async function runValidator(domain: string, report: string): Promise<void> {
 			],
 		});
 
-		const review = JSON.parse(result.text);
-		writeFileSync(reviewPath, JSON.stringify(review, null, "\t"));
+		const review = JSON.parse(reviewResult.text);
+		const issues: unknown[] = review.issues ?? [];
 
-		const issueCount = review.issues?.length ?? 0;
+		if (issues.length === 0) {
+			writeFileSync(
+				reviewPath,
+				JSON.stringify({ ...review, edits: [], fixed: false }, null, "\t"),
+			);
+			log(slug, `Validator passed: ${review.summary}`);
+			return report;
+		}
+
 		log(
 			slug,
-			issueCount > 0
-				? `Validator found ${issueCount} issue(s): ${review.summary}`
-				: `Validator passed: ${review.summary}`,
+			`Validator found ${issues.length} issue(s), fixing: ${review.summary}`,
 		);
+
+		// Step 2: Fix issues
+		const fixResult = await generateText({
+			model: anthropic("claude-sonnet-4-6"),
+			system: FIXER_PROMPT,
+			messages: [
+				{
+					role: "user",
+					content: `Here is the report:\n\n${report}\n\n---\n\nHere are the issues to fix:\n\n${JSON.stringify(issues, null, 2)}`,
+				},
+			],
+		});
+
+		const fix = JSON.parse(fixResult.text);
+		const fixedReport: string = fix.fixedReport ?? report;
+		const edits: unknown[] = fix.edits ?? [];
+
+		// Save original as backup
+		const originalPath = join(OUTPUT_DIR, `${slug}-diagnostic-original.md`);
+		const reportPath = join(OUTPUT_DIR, `${slug}-diagnostic.md`);
+		writeFileSync(originalPath, report);
+		writeFileSync(reportPath, fixedReport);
+
+		// Save review with edits for auditing
+		writeFileSync(
+			reviewPath,
+			JSON.stringify(
+				{ ...review, edits, fixed: true, editCount: edits.length },
+				null,
+				"\t",
+			),
+		);
+
+		log(
+			slug,
+			`Applied ${edits.length} fix(es), original saved as -original.md`,
+		);
+		return fixedReport;
 	} catch (error) {
 		const msg = error instanceof Error ? error.message : String(error);
 		log(slug, `Validator error (non-blocking): ${msg}`);
+		return report;
 	}
 }
 
@@ -966,9 +1038,9 @@ async function processDomain(domain: string): Promise<void> {
 	const diagnostic = await runDiagnostic(domain);
 	if (!diagnostic) return;
 
-	await runValidator(domain, diagnostic);
+	const reviewed = await runValidator(domain, diagnostic);
 	if (!DIAGNOSTICS_ONLY) {
-		await createSlideDeck(domain, diagnostic);
+		await createSlideDeck(domain, reviewed);
 	}
 }
 
