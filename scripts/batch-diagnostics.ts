@@ -701,6 +701,24 @@ function domainSlug(url: string): string {
 	}
 }
 
+/** Extract JSON from model output that may be wrapped in markdown fences or preamble. */
+function parseJsonResponse(text: string): unknown {
+	// Try raw parse first
+	const trimmed = text.trim();
+	try {
+		return JSON.parse(trimmed);
+	} catch {
+		// Strip markdown fences: ```json ... ``` or ``` ... ```
+		const fenced = trimmed.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+		if (fenced) return JSON.parse(fenced[1].trim());
+
+		// Find first { or [ and extract to matching close
+		const start = trimmed.search(/[{[]/);
+		if (start === -1) throw new SyntaxError("No JSON found in model response");
+		return JSON.parse(trimmed.slice(start));
+	}
+}
+
 function log(domain: string, msg: string) {
 	const ts = new Date().toISOString().slice(11, 19);
 	console.log(`[${ts}] [${domain}] ${msg}`);
@@ -971,7 +989,10 @@ async function runValidator(domain: string, report: string): Promise<string> {
 			],
 		});
 
-		const review = JSON.parse(reviewResult.text);
+		const review = parseJsonResponse(reviewResult.text) as Record<
+			string,
+			unknown
+		>;
 		const issues: unknown[] = review.issues ?? [];
 
 		if (issues.length === 0) {
@@ -1000,7 +1021,7 @@ async function runValidator(domain: string, report: string): Promise<string> {
 			],
 		});
 
-		const fix = JSON.parse(fixResult.text);
+		const fix = parseJsonResponse(fixResult.text) as Record<string, unknown>;
 		const fixedReport: string = fix.fixedReport ?? report;
 		const edits: unknown[] = fix.edits ?? [];
 
