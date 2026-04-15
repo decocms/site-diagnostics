@@ -820,9 +820,12 @@ async function createSlideDeck(
 	}
 
 	log(slug, "Creating slide deck...");
-	const mcpClient = await connectMcp(SLIDE_MAKER_MCP, {
-		Authorization: `Bearer ${SLIDE_MAKER_TOKEN}`,
-	});
+	const mcpClient = await connectMcp(
+		SLIDE_MAKER_MCP,
+		SLIDE_MAKER_TOKEN
+			? { Authorization: `Bearer ${SLIDE_MAKER_TOKEN}` }
+			: undefined,
+	);
 
 	try {
 		// Import brand deterministically — inject brandId into tool calls
