@@ -958,13 +958,14 @@ Rules:
 - Make minimal, surgical edits — do not rewrite sections that have no issues.
 - Preserve the original language (English, Portuguese, Spanish, etc.).
 - Preserve all markdown formatting.
+- The "original" field must be an EXACT substring of the report (copy-paste precision) so it can be found and replaced programmatically.
+- Do NOT return the full report — only return the edits array.
 
 Respond with ONLY valid JSON, no markdown fences:
 {
   "edits": [
     { "check": "ISSUE_ID", "original": "exact text replaced", "fixed": "replacement text", "rationale": "why" }
-  ],
-  "fixedReport": "the full report with all fixes applied"
+  ]
 }`;
 
 async function runValidator(domain: string, report: string): Promise<string> {
@@ -1025,8 +1026,27 @@ async function runValidator(domain: string, report: string): Promise<string> {
 		});
 
 		const fix = parseJsonResponse(fixResult.text) as Record<string, unknown>;
-		const fixedReport: string = fix.fixedReport ?? report;
-		const edits: unknown[] = fix.edits ?? [];
+		const edits = (fix.edits ?? []) as {
+			check: string;
+			original: string;
+			fixed: string;
+			rationale: string;
+		}[];
+
+		// Apply edits via string replacement
+		let fixedReport = report;
+		let applied = 0;
+		for (const edit of edits) {
+			if (fixedReport.includes(edit.original)) {
+				fixedReport = fixedReport.replace(edit.original, edit.fixed);
+				applied++;
+			} else {
+				log(
+					slug,
+					`Warning: edit for ${edit.check} not found in report, skipping`,
+				);
+			}
+		}
 
 		// Save original as backup
 		const originalPath = join(OUTPUT_DIR, `${slug}-diagnostic-original.md`);
@@ -1038,7 +1058,13 @@ async function runValidator(domain: string, report: string): Promise<string> {
 		writeFileSync(
 			reviewPath,
 			JSON.stringify(
-				{ ...review, edits, fixed: true, editCount: edits.length },
+				{
+					...review,
+					edits,
+					fixed: applied > 0,
+					editCount: edits.length,
+					appliedCount: applied,
+				},
 				null,
 				"\t",
 			),
@@ -1046,7 +1072,7 @@ async function runValidator(domain: string, report: string): Promise<string> {
 
 		log(
 			slug,
-			`Applied ${edits.length} fix(es), original saved as -original.md`,
+			`Applied ${applied}/${edits.length} fix(es), original saved as -original.md`,
 		);
 		return fixedReport;
 	} catch (error) {
