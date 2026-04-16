@@ -1,0 +1,64 @@
+{
+	"issues": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Produtos com 50+ reviews convertem de 2-3x mais do que produtos sem reviews (Bazaarvoice / Spiegel Research Center).",
+			"explanation": "This is a debunked benchmark. The Spiegel Research Center finding was that 5 reviews produce a 270% lift in conversion probability — not that 50+ reviews convert 2-3x more. The '50+ reviews at 2-3x' formulation does not reflect the actual published research and is listed as a fabricated benchmark to flag."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "O AOV médio aumenta 8-15% com cross-sell bem implementado (Baymard Institute).",
+			"explanation": "Baymard Institute has never published a benchmark claiming cross-sell increases AOV by 8-15%. This is a fabricated attribution to a credible source and must be flagged."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "Empresas com blogs ativos geram aproximadamente 55% mais visitantes, segundo dados amplamente citados do setor.",
+			"explanation": "The phrase 'dados amplamente citados do setor' is not a real source. This statistic is commonly traced back to HubSpot blog posts and is not a peer-reviewed or independently verified benchmark. Citing it without a proper source qualifies as a weak/unverified reference."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"severity": "medium",
+			"location": "o setor de logística de e-commerce estimado em USD 12,5 bilhões.[^biz1]",
+			"explanation": "The footnote explicitly states this figure was 'não verificado na fonte primária' (not verified at the primary source). A specific financial figure of USD 12.5 billion presented without verified sourcing qualifies as an unverified financial claim."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"WAF_SCREENSHOT",
+		"CURRENCY_CONFUSION",
+		"SISTER_BRAND_COMPETITOR",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report is generally well-sourced and methodologically transparent, but contains two debunked fabricated benchmarks (Spiegel '50+ reviews' and Baymard 'AOV 8-15%'), one weak/uncited industry statistic (blogs generating 55% more visitors), and one self-disclosed unverified financial figure that should either be removed or replaced with a verified source.",
+	"edits": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Produtos com 50+ reviews convertem de 2-3x mais do que produtos sem reviews (Bazaarvoice / Spiegel Research Center).",
+			"fixed": "Produtos com 5 ou mais reviews apresentam 270% mais probabilidade de conversão do que produtos sem reviews (Spiegel Research Center, 2017).",
+			"rationale": "The '50+ reviews at 2-3x' formulation is fabricated. Replaced with the correct Spiegel Research Center finding: 5+ reviews → 270% higher purchase likelihood (2017)."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "O AOV médio aumenta 8-15% com cross-sell bem implementado (Baymard Institute).",
+			"fixed": "O AOV médio aumenta com cross-sell bem implementado.",
+			"rationale": "Baymard Institute never published an 8-15% AOV benchmark for cross-sell. The claim and attribution have been removed entirely per the rules for this fabricated benchmark."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Empresas com blogs ativos geram aproximadamente 55% mais visitantes, segundo dados amplamente citados do setor.",
+			"fixed": "Empresas com blogs ativos geram aproximadamente 55% mais visitantes.",
+			"rationale": "'Dados amplamente citados do setor' is not a verifiable source. The citation has been removed and the claim softened to stand without a specific attribution."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"original": "o setor de logística de e-commerce estimado em USD 12,5 bilhões.[^biz1]",
+			"fixed": "o setor de logística de e-commerce estimado em aproximadamente USD 12,5 bilhões (estimativa não verificada na fonte primária).[^biz1]",
+			"rationale": "The footnote itself flags this figure as unverified at the primary source. Added 'aproximadamente' and an inline qualifier to make the unverified nature of the financial figure explicit."
+		}
+	],
+	"fixed": true,
+	"editCount": 4
+}

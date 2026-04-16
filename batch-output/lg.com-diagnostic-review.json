@@ -1,0 +1,76 @@
+{
+	"issues": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Products with 50+ reviews convert at 2-3x versus those with no reviews (Bazaarvoice / Spiegel).",
+			"explanation": "This is a debunked fabricated benchmark. The Spiegel Research Center finding was that 5 reviews (not 50+) produce a 270% conversion lift. The '50+ reviews at 2-3x' formulation is specifically listed as a known bad stat."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Average AOV uplift with cross-sell: 8-15% (Baymard Institute).",
+			"explanation": "This specific stat — 8-15% AOV uplift from cross-sell attributed to Baymard Institute — is a debunked fabricated benchmark. Baymard Institute never published this figure."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"severity": "medium",
+			"location": "The company's estimated 2025 revenue of approximately $75 billion, with B2C reported at approximately 68% of the mix",
+			"explanation": "Although footnote [^biz3] flags these as 'indicative' estimates from Perplexity and points to investor relations for verification, specific figures like '$75 billion' and '68% B2C mix' are presented as near-facts in the body text without a verifiable primary source citation. Perplexity is not a primary source for financial data."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "Rich snippets increase CTR by 20-40% (Search Engine Journal / Ahrefs).",
+			"explanation": "Search Engine Journal is a generic industry blog and Ahrefs blog posts are not peer-reviewed business intelligence or independently verified benchmarks. These are weak sources for a quantified conversion/CTR claim used as a business case."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"WAF_SCREENSHOT",
+		"CURRENCY_CONFUSION",
+		"SISTER_BRAND_COMPETITOR",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report contains two confirmed fabricated benchmarks (Spiegel '50+ reviews' misquote and Baymard AOV cross-sell figure), one inadequately sourced financial claim, and one benchmark backed only by blog/media sources; the Deloitte stat is correctly quoted and no WAF, currency, or competitor-ownership issues were found.",
+	"edits": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Products with 50+ reviews convert at 2-3x versus those with no reviews (Bazaarvoice / Spiegel).",
+			"fixed": "Products with 5+ reviews see 270% higher purchase likelihood (Spiegel Research Center, 2017).",
+			"rationale": "The '50+ reviews at 2-3x' formulation is a fabricated benchmark. Replaced with the correct Spiegel Research Center (2017) finding: 5+ reviews → 270% higher purchase likelihood."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Average AOV uplift with cross-sell: 8-15% (Baymard Institute).",
+			"fixed": "Cross-sell and bundle strategies can drive meaningful AOV uplift.",
+			"rationale": "The Baymard Institute '8-15% AOV uplift from cross-sell' stat is a fabricated benchmark with no verified source. Removed the specific figure and attribution entirely per the rules, replacing with a softened claim."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- Baymard Institute: Average AOV uplift with cross-sell: 8-15%",
+			"fixed": "",
+			"rationale": "Removing the fabricated Baymard benchmark from the References section as well, since the claim itself has been removed from the body."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"original": "The company's estimated 2025 revenue of approximately $75 billion, with B2C reported at approximately 68% of the mix",
+			"fixed": "The company's estimated 2025 revenue of approximately $75 billion (per Perplexity research; verify against LG Electronics' official investor relations disclosures), with B2C estimated at approximately 68% of the mix",
+			"rationale": "The $75 billion revenue and 68% B2C mix figures lack a verifiable primary source. Added an explicit qualifier directing readers to verify against official investor relations disclosures, consistent with the existing footnote [^biz3]."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Rich snippets increase CTR by 20-40% (Search Engine Journal / Ahrefs).",
+			"fixed": "Rich snippets have been widely reported to increase CTR meaningfully, with industry observations commonly citing improvements in the range of 20-40%.",
+			"rationale": "Search Engine Journal and Ahrefs blog posts are weak sources for a quantified CTR claim used as a business case. Removed the specific attribution and softened the claim to reflect its status as a widely cited industry observation rather than a verified benchmark."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "- Search Engine Journal / Ahrefs: Rich snippets increase CTR by 20-40%",
+			"fixed": "- Industry observation: Rich snippets widely reported to increase CTR, commonly cited in the 20-40% range (no single verified primary source)",
+			"rationale": "Updated the References section entry to reflect the removal of the weak source attribution and the softened claim."
+		}
+	],
+	"fixed": true,
+	"editCount": 6
+}

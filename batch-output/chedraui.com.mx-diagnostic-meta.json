@@ -1,0 +1,9 @@
+{
+	"id": "chedraui-com-mx-2026-04-15",
+	"url": "https://www.chedraui.com.mx",
+	"title": "Diagnostic Report: Chedraui (Grupo Comercial Chedraui)",
+	"healthScore": 32,
+	"summary": "Chedraui.com.mx is a massive VTEX IO grocery e-commerce with 67 product sitemaps and approximately 5M monthly visits. The site faces severe mobile performance issues (Lighthouse 7-26/100), has no customer reviews, no Product JSON-LD structured data detected, and an underutilized /recetas editorial section. Strong brand search dominance (#1 for brand keyword) contrasts with significant technical debt across a catalog of tens of thousands of products.",
+	"status": "complete",
+	"createdAt": "2026-04-15T20:00:00Z"
+}

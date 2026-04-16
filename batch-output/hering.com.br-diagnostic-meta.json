@@ -1,0 +1,9 @@
+{
+	"id": "hering-com-br-2026-04-15",
+	"url": "https://www.hering.com.br",
+	"title": "Diagnostic Report: Hering (Grupo Azzas 2154)",
+	"healthScore": 42,
+	"summary": "Hering.com.br (VTEX FastStore, ~4.9M visitas/mês) apresenta performance mobile crítica (LCP 19.6s homepage, 29.7s PDP), ausência de content engine editorial, meta descriptions com HTML inline em milhares de PDPs, e cross-sell não detectado. 7 áreas de melhoria totalizando ~12.800 melhorias em ~3.500 URLs.",
+	"status": "complete",
+	"createdAt": "2026-04-15T21:26:00Z"
+}

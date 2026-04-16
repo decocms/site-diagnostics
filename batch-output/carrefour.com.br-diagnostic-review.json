@@ -1,0 +1,105 @@
+{
+	"issues": [
+		{
+			"check": "WAF_SCREENSHOT",
+			"severity": "high",
+			"location": "O homepage Lighthouse não retornou scores válidos — a página estava protegida por WAF (Cloudflare), impedindo a execução do audit; os screenshots da homepage podem refletir uma página de challenge em vez do conteúdo real.",
+			"explanation": "The report explicitly acknowledges the homepage screenshot may show a Cloudflare WAF challenge page rather than real site content, yet the screenshot is still embedded and presented in the report without a clear warning to the reader at the point of display. The methodology section also notes this, but the screenshot image tag appears without any inline caveat. This constitutes presenting a potential WAF/bot-protection page as site content."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Recomendações de produto respondem por 10-30% da receita em e-commerce (McKinsey).",
+			"explanation": "The '10-30% of e-commerce revenue from recommendations' statistic attributed to McKinsey is a debunked fabricated benchmark. McKinsey never published this figure. It appears both in the body of section 3 and in the references section."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "uplift médio de AOV com cross-sell entre 8-15% (Baymard Institute)",
+			"explanation": "The '8-15% AOV uplift with cross-sell' figure attributed to Baymard Institute is a fabricated benchmark. Baymard has never published this statistic. It appears in both the body of section 3 and the references section."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Produtos com 50+ reviews convertem entre 2x e 3x mais do que produtos sem avaliações (Bazaarvoice / Spiegel).",
+			"explanation": "The '50+ reviews = 2-3x conversion' figure is a misquote. Spiegel Research found that 5 reviews (not 50+) increase conversion by 270%. The '50+ reviews at 2-3x' formulation is a debunked fabricated benchmark. Appears in both section 2 body and references."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"severity": "medium",
+			"location": "receita bruta estimada em aproximadamente R$ 115 bilhões em 2023 e operação e-commerce reportada em torno de R$ 3 bilhões no Q3 2024, segundo fontes de mercado e imprensa.",
+			"explanation": "The R$ 115 billion gross revenue figure is cited with only a Statista URL, which is a third-party aggregator and not a primary financial source. The R$ 3 billion e-commerce figure for Q3 2024 is attributed vaguely to 'market and press sources' with a footnote pointing to the investor relations homepage rather than a specific earnings release or press release. Neither figure has a sufficiently authoritative primary source citation."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "https://www.ainvest.com/news/carrefour-strategic-play-brazil-bold-move-future-growth-2504/",
+			"explanation": "ainvest.com is a generic AI-generated news/blog site, not a credible business intelligence or financial source. It is cited to support a strategic claim about Carrefour's 2025 acquisition and future direction, which qualifies as using a weak source for business intelligence."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"severity": "medium",
+			"location": "Para um site com e-commerce reportado em torno de R$ 3 bilhões no Q3 2024 (conforme fontes de imprensa)[^biz1]",
+			"explanation": "The footnote biz1 links to the Grupo Carrefour Brasil investor relations results page (a general index, not a specific report), which does not directly verify the R$ 3 billion Q3 2024 e-commerce figure. This is an insufficiently specific citation for a precise financial claim."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"CURRENCY_CONFUSION",
+		"SISTER_BRAND_COMPETITOR",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report contains four significant issues: two fabricated benchmarks (McKinsey recommendations revenue share and Baymard AOV uplift), one misquoted Spiegel statistic (50+ reviews vs. the actual 5-review finding), a WAF screenshot disclosure that is insufficiently flagged at point of display, undersourced financial figures, and a weak ainvest.com citation for a strategic claim.",
+	"edits": [
+		{
+			"check": "WAF_SCREENSHOT",
+			"original": "![Homepage Carrefour Brasil - Desktop](http://localhost:3002/api/screenshots/www.carrefour.com.br-desktop-4668897f.png)",
+			"fixed": "> **Nota:** O screenshot da homepage não pôde ser capturado — a página estava protegida por WAF (Cloudflare) e o conteúdo real não foi acessível durante o diagnóstico.",
+			"rationale": "The homepage screenshot may show a Cloudflare challenge page rather than real site content. Replacing the embedded image with an inline caveat at the point of display."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Recomendações de produto respondem por 10-30% da receita em e-commerce (McKinsey). Para um site com e-commerce reportado em torno de R$ 3 bilhões no Q3 2024 (conforme fontes de imprensa)[^biz1], mesmo um uplift modesto de AOV via cross-sell — estimado entre 8-15% (Baymard Institute) — representa receita incremental significativa.",
+			"fixed": "Personalização e recomendações de produto podem gerar um incremento de receita de 5-15% (McKinsey, 2021). Para um site com e-commerce reportado em torno de R$ 3 bilhões no Q3 2024 (conforme fontes de imprensa)[^biz1], mesmo um uplift modesto de AOV via cross-sell representa receita incremental significativa.",
+			"rationale": "Replaced the fabricated McKinsey '10-30% of revenue' benchmark with the verified McKinsey 2021 personalization figure (5-15% revenue lift). Removed the fabricated Baymard '8-15% AOV' claim entirely as no verified source exists."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Produtos com 50+ reviews convertem entre 2x e 3x mais do que produtos sem avaliações (Bazaarvoice / Spiegel).",
+			"fixed": "Produtos com 5 ou mais reviews apresentam probabilidade de compra 270% maior do que produtos sem avaliações (Spiegel Research Center, 2017).",
+			"rationale": "Corrected the misquote: Spiegel found 5+ reviews (not 50+) drive 270% higher purchase likelihood. Removed the '2-3x' fabrication."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"original": "Para um site com e-commerce reportado em torno de R$ 3 bilhões no Q3 2024 (conforme fontes de imprensa)[^biz1]",
+			"fixed": "Para um site com e-commerce estimado em torno de R$ 3 bilhões no Q3 2024 (conforme relatórios de imprensa e resultados públicos do Grupo Carrefour Brasil)[^biz1]",
+			"rationale": "Added 'estimado' qualifier and clarified source attribution to soften the precision of an unverified financial figure."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"original": "receita bruta estimada em aproximadamente R$ 115 bilhões em 2023 e operação e-commerce reportada em torno de R$ 3 bilhões no Q3 2024, segundo fontes de mercado e imprensa.[^biz2]",
+			"fixed": "receita bruta estimada em aproximadamente R$ 115 bilhões em 2023 (Statista, estimativa de terceiros) e operação e-commerce estimada em torno de R$ 3 bilhões no Q3 2024, segundo relatórios de imprensa e resultados públicos do Grupo Carrefour Brasil.[^biz2]",
+			"rationale": "Added qualifiers clarifying that the R$ 115B figure is a third-party Statista estimate and the e-commerce figure is from press/public results, not a verified primary source."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "A aquisição integral pela matriz francesa Carrefour Group em 2025 sinaliza uma consolidação que prioriza eficiência operacional e integração digital — contexto onde SEO e performance de canal DTC ganham ainda mais relevância.[^biz3]",
+			"fixed": "A aquisição integral pela matriz francesa Carrefour Group em 2025 sinaliza uma consolidação que prioriza eficiência operacional e integração digital — contexto onde SEO e performance de canal DTC ganham ainda mais relevância.",
+			"rationale": "Removed the footnote reference to ainvest.com, which is an AI-generated blog with no credible editorial standards. The strategic claim is kept but unsourced rather than sourced to a weak reference."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "[^biz3]: https://www.ainvest.com/news/carrefour-strategic-play-brazil-bold-move-future-growth-2504/",
+			"fixed": "",
+			"rationale": "Removing the footnote definition for the ainvest.com citation, which was the weak source flagged."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- McKinsey: recomendações de produto respondem por 10-30% da receita e-commerce\n- Search Engine Journal / Ahrefs: rich snippets aumentam CTR em 20-40%\n- Bazaarvoice / Spiegel: produtos com 50+ reviews convertem entre 2-3x\n- HubSpot: empresas com blogs ativos geram ~55% mais visitantes\n- Baymard Institute: uplift médio de AOV com cross-sell entre 8-15%",
+			"fixed": "- McKinsey: personalização gera incremento de receita de 5-15% (2021)\n- Search Engine Journal: rich snippets podem aumentar CTR\n- Spiegel Research Center: produtos com 5+ reviews apresentam probabilidade de compra 270% maior (2017)\n- HubSpot: empresas com blogs ativos geram ~55% mais visitantes",
+			"rationale": "Replaced fabricated McKinsey benchmark with verified stat. Corrected Spiegel benchmark (5+ reviews, 270%). Removed Baymard '8-15% AOV' claim (no verified source). Removed Ahrefs '20-40% CTR' claim (no verified source for that specific figure) and softened to Search Engine Journal only."
+		}
+	],
+	"fixed": true,
+	"editCount": 8
+}

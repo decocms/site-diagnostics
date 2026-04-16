@@ -1,0 +1,9 @@
+{
+	"id": "bash-com-20260415",
+	"url": "https://bash.com",
+	"title": "Diagnostic Report: Bash (TFG)",
+	"healthScore": 42,
+	"summary": "Bash.com, TFG's multi-brand e-commerce platform with approximately 9M monthly visits, presents significant SEO and content opportunities. Product pages lack structured data (JSON-LD), no editorial content engine was detected, and Next.js static assets are served with max-age=0 cache headers — collectively limiting organic growth and conversion potential across thousands of product and category pages.",
+	"status": "complete",
+	"createdAt": "2026-04-15T19:30:00Z"
+}

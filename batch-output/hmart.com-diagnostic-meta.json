@@ -1,0 +1,9 @@
+{
+	"id": "hmart-com-20260415",
+	"url": "https://www.hmart.com",
+	"title": "Diagnostic Report: H Mart (Hanahreum Group)",
+	"healthScore": 32,
+	"summary": "H Mart's VTEX IO storefront has material performance issues (3/100 Lighthouse mobile, 41s LCP) and every product page shares a single generic meta description, leaving significant SEO and conversion upside untapped across a large grocery catalog.",
+	"status": "complete",
+	"createdAt": "2026-04-15T21:36:00Z"
+}

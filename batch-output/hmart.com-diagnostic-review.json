@@ -1,0 +1,111 @@
+{
+	"issues": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Unique product descriptions increase organic traffic per PDP by 30-50% (Ahrefs).",
+			"explanation": "This specific benchmark — 'unique descriptions increase traffic by 30-50%' attributed to Ahrefs — has never been published by Ahrefs. It is a debunked/fabricated stat that should not be cited."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Products with 50+ reviews convert at 2-3x the rate of products without reviews (Bazaarvoice / Spiegel Research Center).",
+			"explanation": "Spiegel Research Center found that 5 reviews produce a 270% conversion lift. The '50+ reviews = 2-3x conversion' framing is a debunked misrepresentation of the original research and should not be cited."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "Wikipedia (H Mart); ReadTrung analysis. Note: revenue figure is an estimate drawn from publicly available secondary sources",
+			"explanation": "Wikipedia is cited as a source for business intelligence in the footnote for the $1.1B revenue figure. Wikipedia is not an acceptable business intelligence source per review criteria."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"severity": "medium",
+			"location": "H Mart is the largest Asian supermarket chain in the US, with an estimated $1.1 billion in annual revenue and 97+ stores across 19 states, according to publicly available reporting.",
+			"explanation": "The $1.1 billion revenue figure is presented with only secondary/unaudited sources (Wikipedia, a personal blog 'ReadTrung analysis'). The footnote itself acknowledges 'no audited financial statement is available,' making this an unverified financial claim. The sources cited (Wikipedia, ReadTrung) are not credible primary financial sources."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "low",
+			"location": "https://www.readtrung.com/p/h-mart-stays-winning",
+			"explanation": "A personal blog (ReadTrung) is cited as a source for business intelligence and the revenue figure, which qualifies as a generic blog post used as a business intelligence source."
+		},
+		{
+			"check": "OVERLY_SPECIFIC_UNVERIFIED",
+			"severity": "medium",
+			"location": "approximately 37% bounce rate",
+			"explanation": "A precise bounce rate figure of 37% is stated without a clearly reliable source — the footnote only attributes it to Similarweb panel-based estimates, which the report itself acknowledges are approximate. Presenting a suspiciously precise unverified figure like 37% (not a round number) as a benchmark-quality metric is problematic."
+		},
+		{
+			"check": "OVERLY_SPECIFIC_UNVERIFIED",
+			"severity": "low",
+			"location": "approximately 60% from Perplexity and 40% from ChatGPT among AI referrals (industry estimates)",
+			"explanation": "A very precise AI traffic share split (60%/40%) is presented with only a vague 'industry estimates' attribution, with no source cited. This is a suspiciously specific unverified claim."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"WAF_SCREENSHOT",
+		"CURRENCY_CONFUSION",
+		"SISTER_BRAND_COMPETITOR"
+	],
+	"summary": "The report contains several significant issues: two fabricated benchmarks (Ahrefs 30-50% traffic uplift and Spiegel 50+ reviews 2-3x conversion), an unverified revenue figure sourced partly from Wikipedia and a personal blog, and two overly specific unverified data points; the Deloitte stat is correctly cited, no WAF screenshot issues were detected, and no sister-brand or currency confusion errors were found.",
+	"edits": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Unique product descriptions increase organic traffic per PDP by 30-50% (Ahrefs). For a grocery e-commerce site competing against Weee!, Yami, and Bokksu Market, thin content limits the ability to rank for non-branded product searches like \"korean ramen variety pack\" or \"dubai chocolate buy online.\"",
+			"fixed": "For a grocery e-commerce site competing against Weee!, Yami, and Bokksu Market, thin content limits the ability to rank for non-branded product searches like \"korean ramen variety pack\" or \"dubai chocolate buy online.\"",
+			"rationale": "The Ahrefs '30-50% organic traffic' benchmark is fabricated and must be removed entirely per the FABRICATED_BENCHMARK rule. The surrounding text is preserved."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Products with 50+ reviews convert at 2-3x the rate of products without reviews (Bazaarvoice / Spiegel Research Center).",
+			"fixed": "Products with 5 or more reviews see approximately 270% higher purchase likelihood compared to products without reviews (Spiegel Research Center, 2017).",
+			"rationale": "Replace the fabricated '50+ reviews = 2-3x' misrepresentation with the correct Spiegel Research Center finding per the FABRICATED_BENCHMARK rule."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"original": "H Mart is the largest Asian supermarket chain in the US, with an estimated $1.1 billion in annual revenue and 97+ stores across 19 states, according to publicly available reporting.",
+			"fixed": "H Mart is the largest Asian supermarket chain in the US, with an estimated $1.1 billion in annual revenue (reported by secondary sources; no audited financial statement is available) and 97+ stores across 19 states.",
+			"rationale": "The revenue figure is drawn from unaudited secondary sources. Moving the qualification into the main text makes the uncertainty explicit, as required by the UNVERIFIED_FINANCIALS rule."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Hmart.com/about-us; Wikipedia (H Mart); ReadTrung analysis. Note: revenue figure is an estimate drawn from publicly available secondary sources; no audited financial statement is available.",
+			"fixed": "Hmart.com/about-us; RetailToday, \"State of the Grocery Industry 2025\" — H Mart profile. Note: revenue figure is an estimate drawn from publicly available secondary sources; no audited financial statement is available.",
+			"rationale": "Wikipedia and the personal blog ReadTrung are not acceptable business intelligence sources. Replacing them with the RetailToday source already cited in the report (^biz2), which is a more credible trade publication reference."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "- https://www.readtrung.com/p/h-mart-stays-winning",
+			"fixed": "",
+			"rationale": "The personal blog ReadTrung is not an acceptable business intelligence source. Removing it from the reference list."
+		},
+		{
+			"check": "OVERLY_SPECIFIC_UNVERIFIED",
+			"original": "approximately 37% bounce rate",
+			"fixed": "an approximately 35–40% bounce rate",
+			"rationale": "The precise 37% figure comes from Similarweb panel-based estimates, which the report itself acknowledges are approximate. Rounding to a range removes false precision."
+		},
+		{
+			"check": "OVERLY_SPECIFIC_UNVERIFIED",
+			"original": "approximately 60% from Perplexity and 40% from ChatGPT among AI referrals (industry estimates)",
+			"fixed": "a mix of Perplexity and ChatGPT referrals among AI traffic sources (industry estimates; exact split unverified)",
+			"rationale": "The 60%/40% split is suspiciously precise with only a vague 'industry estimates' attribution. Softening to a qualitative description removes the unverified specificity."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- Ahrefs: Unique product descriptions → +30-50% organic traffic per PDP",
+			"fixed": "",
+			"rationale": "Removing the fabricated Ahrefs benchmark from the References section to match the removal from the body text."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- Bazaarvoice / Spiegel Research Center: 50+ reviews → 2-3x conversion",
+			"fixed": "- Spiegel Research Center (2017): Products with 5+ reviews → ~270% higher purchase likelihood",
+			"rationale": "Updating the references section to reflect the correct Spiegel Research Center finding."
+		}
+	],
+	"fixed": true,
+	"editCount": 9
+}

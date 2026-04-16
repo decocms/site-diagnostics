@@ -1,0 +1,105 @@
+{
+	"issues": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Products with 50+ reviews convert at 2-3x the rate of those without (Bazaarvoice / Spiegel Research)",
+			"explanation": "This is a debunked benchmark. Spiegel Research found that 5 reviews (not 50+) produced a 270% conversion lift. The '50+ reviews convert at 2-3x' figure is a misrepresentation of the actual finding and is flagged as fabricated regardless of attribution."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Average AOV uplift with cross-sell is 8-15% (Baymard Institute)",
+			"explanation": "Baymard Institute has never published a benchmark stating 8-15% AOV uplift from cross-sell. This is a fabricated attribution to Baymard and is on the explicit debunked-stats list."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Unique product descriptions increase organic traffic per PDP by 30-50% (Ahrefs)",
+			"explanation": "Ahrefs has never published a study showing unique product descriptions increase traffic by 30-50% per PDP. This is a fabricated benchmark on the explicit debunked-stats list."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "Rich snippets increase CTR by 20-40% (Search Engine Journal / Ahrefs)",
+			"explanation": "Search Engine Journal is a generic industry blog, not a peer-reviewed or primary research source. Attributing a specific CTR benchmark to it alongside Ahrefs (a vendor blog) does not meet the standard for a credible business intelligence or industry benchmark citation."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "Companies with active blogs generate approximately 55% more visitors (HubSpot)",
+			"explanation": "HubSpot is a vendor with commercial interest in promoting content marketing. Their self-published blog statistics are widely considered unreliable industry benchmarks and fall into the category of generic blog/vendor content rather than credible third-party research."
+		},
+		{
+			"check": "SISTER_BRAND_COMPETITOR",
+			"severity": "high",
+			"location": "Coppel hold those positions... and Coppel also compete for the same branded traffic",
+			"explanation": "Coppel is not a sister brand of Italika/Grupo Salinas, so this specific check does not apply here. However, reviewing the report: Elektra is referenced as sharing the same VTEX instance and backend with Italika (both under Grupo Salinas), yet Elektra marketplace pages are discussed as inherited infrastructure rather than listed as a competitor — this is handled correctly. No sister-brand competitor misclassification is present."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"severity": "low",
+			"location": "Italika holds a dominant position in Mexico's motorcycle market, selling approximately 1.3 million units in 2025 — the 8th largest motorcycle manufacturer globally, according to industry data.[^biz1]",
+			"explanation": "The citation [^biz1] resolves to imotorbike.com, a third-party motorcycle news site. While a source is provided, the specific claim of '8th largest motorcycle manufacturer globally' is a very precise ranking from a non-authoritative source that cannot be independently verified from the URL provided. This is borderline; the presence of a citation mitigates severity, but the source quality is weak for such a specific global ranking claim."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"WAF_SCREENSHOT",
+		"CURRENCY_CONFUSION",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report contains three high-severity fabricated benchmarks (Baymard AOV uplift, Ahrefs unique-description traffic lift, Spiegel 50+ reviews claim) that are on the explicit debunked-stats list, plus two weak-source citations (HubSpot, Search Engine Journal); the Deloitte stat is correctly quoted, no WAF screenshots or currency confusion were found, and no sister-brand competitor misclassification is present.",
+	"edits": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Products with 50+ reviews convert at 2-3x the rate of those without (Bazaarvoice / Spiegel Research).",
+			"fixed": "Products with 5 or more reviews see a 270% higher purchase likelihood (Spiegel Research, 2017).",
+			"rationale": "The '50+ reviews, 2-3x conversion' figure misrepresents the Spiegel Research finding. The correct stat is: 5+ reviews → 270% higher purchase likelihood (Spiegel Research, 2017)."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Average AOV uplift with cross-sell is 8-15% (Baymard Institute).",
+			"fixed": "Cross-sell and recommendation features are a widely cited lever for increasing average order value.",
+			"rationale": "Baymard Institute never published an 8-15% AOV cross-sell benchmark. This is a fabricated attribution on the explicit debunked-stats list. The claim is softened and the unsupported citation removed."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Unique product descriptions increase organic traffic per PDP by 30-50% (Ahrefs).",
+			"fixed": "Unique product descriptions are a recognized best practice for improving organic visibility per PDP.",
+			"rationale": "Ahrefs never published a study showing 30-50% traffic uplift from unique product descriptions. This is a fabricated benchmark on the explicit debunked-stats list. The unsupported citation is removed and the claim softened."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- Ahrefs: Unique product descriptions increase organic traffic per PDP by 30-50%\n- Baymard Institute: Average AOV uplift with cross-sell: 8-15%",
+			"fixed": "- Spiegel Research (2017): Products with 5+ reviews see 270% higher purchase likelihood",
+			"rationale": "Removing both fabricated benchmarks from the References section and correcting the Spiegel entry to match the fix applied in the body."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Rich snippets increase CTR by 20-40% (Search Engine Journal / Ahrefs).",
+			"fixed": "Rich snippets are widely associated with meaningful CTR improvements in search results.",
+			"rationale": "Search Engine Journal is a generic industry blog and Ahrefs is a vendor blog; neither constitutes a credible primary research source for a specific CTR benchmark. The unsupported citation is removed and the claim softened."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Companies with active blogs generate approximately 55% more visitors (HubSpot).",
+			"fixed": "Companies with active blogs are broadly observed to generate more organic visitors.",
+			"rationale": "HubSpot is a vendor with commercial interest in promoting content marketing; their self-published statistics are not considered reliable third-party benchmarks. The citation is removed and the claim softened."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "- Search Engine Journal / Ahrefs: Rich snippets increase CTR by 20-40%\n- Bazaarvoice / Spiegel Research: Products with 50+ reviews convert at 2-3x\n- Ahrefs: Unique product descriptions increase organic traffic per PDP by 30-50%\n- Baymard Institute: Average AOV uplift with cross-sell: 8-15%\n- HubSpot: Companies with active blogs generate ~55% more visitors",
+			"fixed": "- Spiegel Research (2017): Products with 5+ reviews see 270% higher purchase likelihood",
+			"rationale": "Removing fabricated and weak-source benchmarks from the References section; the Spiegel Research entry is corrected to match the fix applied in the body."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"original": "Italika holds a dominant position in Mexico's motorcycle market, selling approximately 1.3 million units in 2025 — the 8th largest motorcycle manufacturer globally, according to industry data.[^biz1]",
+			"fixed": "Italika holds a dominant position in Mexico's motorcycle market, selling approximately 1.3 million units in 2025 — reported by industry sources as one of the largest motorcycle manufacturers globally.[^biz1]",
+			"rationale": "The specific '8th largest globally' ranking comes from a non-authoritative third-party site and cannot be independently verified. The claim is softened to reflect the limited authority of the source."
+		}
+	],
+	"fixed": true,
+	"editCount": 8
+}

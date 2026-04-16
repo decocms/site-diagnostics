@@ -1,0 +1,70 @@
+{
+	"issues": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Products with 50+ reviews convert at 2-3x the rate of products without reviews (Bazaarvoice / Spiegel Research Center).",
+			"explanation": "This is a debunked benchmark. Spiegel Research Center found that 5 reviews (not 50+) produced a 270% conversion uplift. The '50+ reviews at 2-3x' figure is a misrepresentation of the actual study and is flagged as a fabricated benchmark regardless of attribution."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Average AOV uplift with cross-sell is 8-15% (Baymard Institute).",
+			"explanation": "Baymard Institute never published an 8-15% AOV uplift figure for cross-sell. This is a fabricated benchmark attributed to Baymard, which is a debunked stat on the watch list."
+		},
+		{
+			"check": "WAF_SCREENSHOT",
+			"severity": "low",
+			"location": "A screenshot of the H&M Colombia homepage was captured during the audit but was served from a local rendering pipeline and could not be verified as showing the live site rather than a WAF/bot-protection interstitial. It has been omitted from this report.",
+			"explanation": "The report explicitly acknowledges that captured screenshots may show WAF/bot-protection interstitials rather than real site content. While the screenshots were correctly omitted, this note appears three times and confirms the WAF_SCREENSHOT risk was encountered. The omission is handled appropriately, but the issue is worth flagging as it affected audit data collection."
+		},
+		{
+			"check": "SISTER_BRAND_COMPETITOR",
+			"severity": "medium",
+			"location": "local competitors like Studio F, Adrissa, NAF NAF, SevenSeven",
+			"explanation": "NAF NAF is a brand that has had ownership connections to H&M Group in certain markets. If NAF NAF is owned or co-owned by H&M Group in the Colombian market context, listing it as a competitor would be a sister-brand error. This should be verified; if NAF NAF Colombia is not under H&M Group ownership, this may be a false positive, but it warrants flagging for review."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"UNVERIFIED_FINANCIALS",
+		"WEAK_SOURCES",
+		"CURRENCY_CONFUSION",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report contains two confirmed high-severity fabricated benchmarks (Spiegel '50+ reviews' misquote and Baymard cross-sell AOV claim), a WAF screenshot issue that was disclosed and mitigated but still affected audit integrity, and a potential sister-brand competitor listing (NAF NAF) that requires ownership verification; all other checks passed cleanly.",
+	"edits": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Products with 50+ reviews convert at 2-3x the rate of products without reviews (Bazaarvoice / Spiegel Research Center).",
+			"fixed": "Products with 5 or more reviews see a 270% higher purchase likelihood compared to products with no reviews (Spiegel Research Center, 2017).",
+			"rationale": "The '50+ reviews at 2-3x' figure misrepresents the Spiegel study. The correct finding is that 5+ reviews produce a 270% uplift in purchase likelihood."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Average AOV uplift with cross-sell is 8-15% (Baymard Institute).",
+			"fixed": "Cross-sell sections can meaningfully increase average order value.",
+			"rationale": "Baymard Institute never published an 8-15% AOV uplift figure for cross-sell. The claim is removed entirely and replaced with a softened, unsourced assertion per instructions."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- Baymard Institute: average AOV uplift with cross-sell of 8-15%",
+			"fixed": "",
+			"rationale": "Removes the fabricated Baymard benchmark from the References section, consistent with removing it from the body of the report."
+		},
+		{
+			"check": "SISTER_BRAND_COMPETITOR",
+			"original": "local competitors like Studio F, Adrissa, NAF NAF, SevenSeven",
+			"fixed": "local competitors like Studio F, Adrissa, Esprit, SevenSeven",
+			"rationale": "NAF NAF has had ownership ties to H&M Group in certain markets, making it a potential sister-brand error. It is replaced with Esprit, which is already cited as a genuine competitor elsewhere in the report (Section 3)."
+		},
+		{
+			"check": "SISTER_BRAND_COMPETITOR",
+			"original": "local players (Studio F, Adrissa, NAF NAF, SevenSeven)",
+			"fixed": "local players (Studio F, Adrissa, Esprit, SevenSeven)",
+			"rationale": "Same sister-brand fix applied to the second occurrence of the competitor list in the Strategic context section."
+		}
+	],
+	"fixed": true,
+	"editCount": 5
+}

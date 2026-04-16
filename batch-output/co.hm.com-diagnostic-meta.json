@@ -1,0 +1,9 @@
+{
+	"id": "co-hm-com-2026-04-15",
+	"url": "https://co.hm.com",
+	"title": "Diagnostic Report: H&M Colombia (co.hm.com)",
+	"healthScore": 47,
+	"summary": "H&M Colombia's site runs on VTEX FastStore/Next.js with ~970K monthly visits (96% Colombia). The catalog spans approximately 3,500 products across 7 sitemaps with strong structured data but faces significant performance issues (LCP 11-17s mobile), no editorial content engine, no customer reviews on sampled PDPs, and failed Next.js data requests degrading the user experience.",
+	"status": "complete",
+	"createdAt": "2026-04-15T20:10:00Z"
+}

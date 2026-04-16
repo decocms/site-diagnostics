@@ -1,0 +1,94 @@
+{
+	"issues": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Products with 50+ reviews convert at 2-3x the rate of products without reviews (Bazaarvoice / Spiegel Research Center).",
+			"explanation": "The Spiegel Research Center finding was that 5 reviews yields a 270% conversion lift, not that '50+ reviews convert at 2-3x'. The '50+ reviews' threshold with '2-3x' multiplier is a debunked/misrepresented version of that stat. This is listed as a fabricated benchmark to flag regardless of attribution."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Unique product descriptions broadly associated with improved organic traffic per PDP, with industry practitioners commonly citing gains in the 30-50% range.",
+			"explanation": "The '30-50% traffic increase from unique descriptions' figure is a debunked benchmark — it has never been published by Ahrefs or any credible source. The report's hedging language ('commonly citing') does not absolve the inclusion of this fabricated figure."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Average AOV uplift from effective cross-sell is 8-15% (Baymard Institute).",
+			"explanation": "Baymard Institute has never published an '8-15% AOV uplift from cross-sell' benchmark. This is a debunked stat regardless of the attribution. It also appears in the References section restating the same false attribution."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"severity": "medium",
+			"location": "With an estimated US$234 million in online GMV and projected 10-15% growth for 2026 (based on publicly available estimates from ecdb.com, marketing4ecommerce.net, and InRetail corporate presentations; figures are approximate and unaudited)",
+			"explanation": "A specific GMV figure of US$234 million is cited with hedging language ('approximate and unaudited'). The sources listed (ecdb.com, marketing4ecommerce.net) are not authoritative financial sources, and InRetail corporate presentations may not break out online GMV at this precision. Providing a specific dollar figure while flagging it as unaudited still risks misleading readers with false precision."
+		},
+		{
+			"check": "SISTER_BRAND_COMPETITOR",
+			"severity": "high",
+			"location": "The competitive landscape includes Wong, Metro, and Tottus — all actively investing in e-commerce capabilities.",
+			"explanation": "Wong and Metro are both operated by Cencosud (the report even states this). PlazaVea is owned by InRetail/Intercorp. Wong and Metro are competitors, not sister brands — this check does not apply here. However, the report correctly identifies them as competitors under Cencosud. Re-evaluating: this is not a sister-brand issue. Disregard this flag."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "low",
+			"location": "based on publicly available estimates from ecdb.com, marketing4ecommerce.net, and InRetail corporate presentations",
+			"explanation": "marketing4ecommerce.net is a generic marketing blog, not a credible financial intelligence source. Using it to support a specific GMV figure of US$234 million is inappropriate and qualifies as a weak source for business/financial benchmarking purposes."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"WAF_SCREENSHOT",
+		"CURRENCY_CONFUSION",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report contains three high-severity fabricated benchmarks (Spiegel '50+ reviews', Ahrefs '30-50% traffic', Baymard '8-15% AOV'), an insufficiently sourced specific GMV figure, and a weak blog source used to support financial data; the Deloitte stat, screenshot content, and currency handling are all correct.",
+	"edits": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Products with 50+ reviews convert at 2-3x the rate of products without reviews (Bazaarvoice / Spiegel Research Center).",
+			"fixed": "Products with 5 or more reviews see a 270% higher purchase likelihood (Spiegel Research Center, 2017).",
+			"rationale": "The '50+ reviews convert at 2-3x' framing is a misrepresentation of the Spiegel finding. The verified stat is that 5+ reviews yield a 270% conversion lift."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Unique, keyword-rich descriptions that include product attributes (brand, size, key benefit) are broadly associated with improved organic traffic per PDP, with industry practitioners commonly citing gains in the 30-50% range.",
+			"fixed": "Unique, keyword-rich descriptions that include product attributes (brand, size, key benefit) are broadly associated with improved organic traffic per PDP.",
+			"rationale": "The '30-50% traffic increase' figure has no verified source and must be removed entirely per guidelines. The surrounding language is preserved without the fabricated range."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Average AOV uplift from effective cross-sell is 8-15% (Baymard Institute).",
+			"fixed": "Effective cross-sell implementation is widely associated with meaningful AOV uplift.",
+			"rationale": "Baymard Institute has never published an '8-15% AOV uplift from cross-sell' benchmark. The specific figure and attribution are removed entirely per guidelines."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- Baymard Institute: Average AOV uplift with cross-sell: 8-15%",
+			"fixed": "- Effective cross-sell is widely associated with meaningful AOV uplift (no single verified benchmark source)",
+			"rationale": "Removes the fabricated Baymard benchmark from the References section to match the inline correction."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- Bazaarvoice / Spiegel Research Center: Products with 50+ reviews convert at 2-3x vs. no reviews",
+			"fixed": "- Spiegel Research Center (2017): Products with 5+ reviews see 270% higher purchase likelihood",
+			"rationale": "Corrects the misrepresented stat in the References section to match the verified Spiegel finding."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"original": "With an estimated US$234 million in online GMV and projected 10-15% growth for 2026 (based on publicly available estimates from ecdb.com, marketing4ecommerce.net, and InRetail corporate presentations; figures are approximate and unaudited)",
+			"fixed": "With an estimated online GMV in the hundreds of millions of US dollars and projected growth for 2026 (based on publicly available estimates from ecdb.com and InRetail corporate presentations; figures are approximate and unaudited)",
+			"rationale": "The specific US$234 million figure carries false precision given the weak sourcing. Rounding to a general range reduces the risk of misleading readers. marketing4ecommerce.net is also removed as a financial source per the WEAK_SOURCES flag."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "based on publicly available estimates from ecdb.com, marketing4ecommerce.net, and InRetail corporate presentations",
+			"fixed": "based on publicly available estimates from ecdb.com and InRetail corporate presentations",
+			"rationale": "marketing4ecommerce.net is a generic marketing blog and not a credible financial intelligence source for supporting a specific GMV figure. It is removed; the remaining sources are more defensible."
+		}
+	],
+	"fixed": true,
+	"editCount": 7,
+	"appliedCount": 6
+}

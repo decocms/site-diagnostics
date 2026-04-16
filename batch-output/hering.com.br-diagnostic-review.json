@@ -1,0 +1,54 @@
+{
+	"issues": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Recomendações de produto representam 10-30% da receita de e-commerce (McKinsey). O AOV médio em lojas com cross-sell ativo sobe 8-15% (Baymard Institute).",
+			"explanation": "Both of these are debunked fabricated benchmarks. The '10-30% of e-commerce revenue from recommendations' was never published by McKinsey in the form commonly cited. The '8-15% AOV uplift with cross-sell' was never published by Baymard Institute. Both are flagged on the explicit debunked list."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "produtos com 50+ reviews convertem 2-3x mais do que produtos sem reviews (Bazaarvoice / Spiegel)",
+			"explanation": "The Spiegel Research Center finding is about 5 reviews producing a 270% conversion lift, not '50+ reviews converting 2-3x more'. The '50+ reviews = 2-3x' formulation is a debunked misrepresentation of the original stat and is explicitly on the flagged list."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "O AOV médio em lojas com cross-sell ativo sobe 8-15% (Baymard Institute).",
+			"explanation": "The 8-15% AOV uplift attributed to Baymard Institute for cross-sell is a fabricated benchmark that Baymard has never published. This is explicitly listed as a debunked stat."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"WAF_SCREENSHOT",
+		"UNVERIFIED_FINANCIALS",
+		"WEAK_SOURCES",
+		"CURRENCY_CONFUSION",
+		"SISTER_BRAND_COMPETITOR",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report passes most checks but contains three fabricated benchmark violations in Section 4 (cross-sell), all of which are on the explicit debunked list: the McKinsey '10-30% revenue from recommendations', the Baymard '8-15% AOV uplift', and the Spiegel '50+ reviews = 2-3x conversion' misquote.",
+	"edits": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Recomendações de produto representam 10-30% da receita de e-commerce (McKinsey). O AOV médio em lojas com cross-sell ativo sobe 8-15% (Baymard Institute).",
+			"fixed": "Segundo a McKinsey (2021), personalização gera um aumento de receita de 5-15%.",
+			"rationale": "The McKinsey '10-30% of e-commerce revenue' claim is fabricated. Replaced with the verified McKinsey 2021 personalization stat. The Baymard '8-15% AOV uplift' claim is also fabricated and has no verified source, so it is removed entirely per instructions."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "produtos com 50+ reviews convertem 2-3x mais do que produtos sem reviews (Bazaarvoice / Spiegel)",
+			"fixed": "produtos com 5 ou mais reviews apresentam probabilidade de compra 270% maior (Spiegel Research Center, 2017)",
+			"rationale": "The '50+ reviews = 2-3x conversion' formulation is a misrepresentation of the Spiegel finding. Replaced with the correct Spiegel Research Center (2017) stat: 5+ reviews → 270% higher purchase likelihood."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- Baymard Institute: AOV uplift médio com cross-sell de 8-15%",
+			"fixed": "",
+			"rationale": "The Baymard Institute '8-15% AOV uplift with cross-sell' is a fabricated benchmark with no verified source. Removed entirely per instructions."
+		}
+	],
+	"fixed": true,
+	"editCount": 3
+}

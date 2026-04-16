@@ -1,0 +1,9 @@
+{
+	"id": "farmrio-com-br-2026-04-15",
+	"url": "https://www.farmrio.com.br",
+	"title": "Diagnóstico: FARM Rio (Grupo Soma)",
+	"healthScore": 52,
+	"summary": "Site com catálogo extenso (~3.500 PDPs), marca forte (#1 para \"vestido estampado feminino\"), mas performance mobile comprometida (Lighthouse 36/100, LCP 13s na home), sem content engine editorial, reviews não detectados nas PDPs analisadas e meta descriptions duplicadas em 22 páginas.",
+	"status": "complete",
+	"createdAt": "2026-04-15T21:26:00Z"
+}

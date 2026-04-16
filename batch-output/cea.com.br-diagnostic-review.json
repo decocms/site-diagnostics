@@ -1,0 +1,101 @@
+{
+	"issues": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Segundo o Spiegel Research Center / Bazaarvoice, produtos com 50+ reviews convertem 2-3x mais que produtos sem reviews.",
+			"explanation": "The Spiegel Research Center finding is that 5 reviews (not 50+) produce a 270% conversion lift. The '50+ reviews = 2-3x conversion' framing is a fabricated/distorted benchmark not published by Spiegel or Bazaarvoice."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Bazaarvoice / Spiegel: 50+ reviews = 2-3x conversão vs. sem reviews",
+			"explanation": "Same fabricated benchmark repeated in the references section. Spiegel's actual finding is about 5 reviews yielding ~270% uplift, not 50+ reviews at 2-3x."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Descrições únicas e detalhadas aumentam o tráfego orgânico por PDP em 30-50% (Ahrefs).",
+			"explanation": "Ahrefs never published a study showing unique descriptions increase traffic by 30-50%. This is a debunked/fabricated benchmark."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Ahrefs: descriptions únicas = +30-50% tráfego orgânico por PDP",
+			"explanation": "Repeated in the references section. Ahrefs has not published this benchmark; it is fabricated."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Baymard Institute: cross-sell uplift de 8-15% no AOV",
+			"explanation": "Baymard Institute has not published a benchmark of 8-15% AOV uplift from cross-sell. This is a fabricated attribution to Baymard."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "Empresas com blogs ativos geram aproximadamente 55% mais visitantes, de acordo com dados amplamente citados no setor de marketing de conteúdo.",
+			"explanation": "Citing 'dados amplamente citados no setor de marketing de conteúdo' with no specific source is equivalent to citing a generic blog post or unattributed industry claim. This does not meet the standard of a verifiable business intelligence source."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "Dados amplamente citados no setor de marketing de conteúdo: blogs ativos geram ~55% mais visitantes",
+			"explanation": "Same unattributed benchmark repeated in the references section. The original source is typically attributed to HubSpot but is not verified here; citing it as a generic industry claim is a weak source."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"WAF_SCREENSHOT",
+		"UNVERIFIED_FINANCIALS",
+		"CURRENCY_CONFUSION",
+		"SISTER_BRAND_COMPETITOR",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report correctly cites Deloitte and avoids WAF/currency/competitor errors, but contains multiple fabricated benchmarks (Spiegel 50+ reviews, Ahrefs 30-50% traffic, Baymard 8-15% AOV) and relies on unattributed generic industry claims, all of which must be corrected before publication.",
+	"edits": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Segundo o Spiegel Research Center / Bazaarvoice, produtos com 50+ reviews convertem 2-3x mais que produtos sem reviews. O gap entre a média atual e o benchmark de 50 reviews representa uma oportunidade de conversão.",
+			"fixed": "Segundo o Spiegel Research Center (2017), produtos com 5 ou mais reviews apresentam 270% mais probabilidade de conversão do que produtos sem reviews. O gap entre a média atual e esse limiar representa uma oportunidade de conversão.",
+			"rationale": "Spiegel's actual finding is that 5+ reviews yield a 270% conversion lift. The '50+ reviews = 2-3x' framing is fabricated. Replaced with the correct benchmark per instructions."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Bazaarvoice / Spiegel: 50+ reviews = 2-3x conversão vs. sem reviews",
+			"fixed": "Spiegel Research Center (2017): produtos com 5+ reviews = 270% maior probabilidade de conversão vs. sem reviews",
+			"rationale": "Same fabricated benchmark repeated in references section. Replaced with the correct Spiegel finding per instructions."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Descrições únicas e detalhadas aumentam o tráfego orgânico por PDP em 30-50% (Ahrefs). Com dezenas de milhares de PDPs, padronizar a qualidade descritiva em todo o catálogo é uma oportunidade de escala.",
+			"fixed": "Descrições únicas e detalhadas são amplamente recomendadas como boas práticas de SEO para aumentar a relevância por PDP. Com dezenas de milhares de PDPs, padronizar a qualidade descritiva em todo o catálogo é uma oportunidade de escala.",
+			"rationale": "Ahrefs never published a 30-50% traffic lift benchmark for unique descriptions. Removed the fabricated claim and softened the statement per instructions."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Ahrefs: descriptions únicas = +30-50% tráfego orgânico por PDP",
+			"fixed": "Boas práticas de SEO recomendam descriptions únicas por PDP para maximizar relevância e tráfego orgânico (sem benchmark verificado por fonte primária)",
+			"rationale": "Ahrefs has not published this benchmark. Removed the fabricated attribution in the references section per instructions."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Baymard Institute: cross-sell uplift de 8-15% no AOV",
+			"fixed": "",
+			"rationale": "Baymard Institute has not published a benchmark of 8-15% AOV uplift from cross-sell. Removed entirely per instructions."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Empresas com blogs ativos geram aproximadamente 55% mais visitantes, de acordo com dados amplamente citados no setor de marketing de conteúdo.",
+			"fixed": "Empresas com blogs ativos tendem a gerar significativamente mais visitantes orgânicos, segundo estudos do setor (HubSpot, entre outros).",
+			"rationale": "The unattributed 'widely cited industry data' is a weak source. Softened the claim and attributed to HubSpot as the most commonly identified original source, while acknowledging it as one among others."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Dados amplamente citados no setor de marketing de conteúdo: blogs ativos geram ~55% mais visitantes",
+			"fixed": "HubSpot (entre outros): empresas com blogs ativos tendem a gerar significativamente mais visitantes orgânicos (dado amplamente citado, verificar fonte primária)",
+			"rationale": "Same weak unattributed benchmark in the references section. Attributed to HubSpot as the most commonly identified source and added a caveat per instructions."
+		}
+	],
+	"fixed": true,
+	"editCount": 7
+}

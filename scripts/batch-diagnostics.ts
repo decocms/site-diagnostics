@@ -7,7 +7,9 @@
  * Usage:
  *   bun scripts/batch-diagnostics.ts domains.csv
  *   bun scripts/batch-diagnostics.ts domains.csv --diagnostics-only
+ *   bun scripts/batch-diagnostics.ts domains.csv --slides-only
  *   bun scripts/batch-diagnostics.ts domains.csv --local
+ *   bun scripts/batch-diagnostics.ts path/to/report.md          # single file → slides
  *
  * CSV format (one column, no header):
  *   https://www.example.com
@@ -41,13 +43,14 @@ import {
 // ── Config ────────────────────────────────────────────────────
 
 const DIAGNOSTICS_ONLY = process.argv.includes("--diagnostics-only");
+const SLIDES_ONLY = process.argv.includes("--slides-only");
 const LOCAL = process.argv.includes("--local");
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is required");
 
 const SLIDE_MAKER_TOKEN = process.env.SLIDE_MAKER_TOKEN;
-if (!SLIDE_MAKER_TOKEN && !DIAGNOSTICS_ONLY && !LOCAL)
+if (!SLIDE_MAKER_TOKEN && !DIAGNOSTICS_ONLY && !LOCAL && !SLIDES_ONLY)
 	throw new Error("SLIDE_MAKER_TOKEN is required (or use --diagnostics-only)");
 
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 8);
@@ -1084,13 +1087,31 @@ async function runValidator(domain: string, report: string): Promise<string> {
 
 // ── Pipeline ──────────────────────────────────────────────────
 
-async function processDomain(domain: string): Promise<void> {
-	const diagnostic = await runDiagnostic(domain);
-	if (!diagnostic) return;
+async function processDomain(
+	domain: string,
+	existingReport?: string,
+): Promise<void> {
+	let diagnostic: string | null;
 
-	const reviewed = await runValidator(domain, diagnostic);
+	if (existingReport) {
+		diagnostic = existingReport;
+	} else if (SLIDES_ONLY) {
+		// In slides-only mode, read the existing diagnostic from disk
+		const slug = domainSlug(domain);
+		const mdPath = join(OUTPUT_DIR, `${slug}-diagnostic.md`);
+		if (!existsSync(mdPath)) {
+			log(slug, `No diagnostic found at ${mdPath}, skipping`);
+			return;
+		}
+		diagnostic = readFileSync(mdPath, "utf-8");
+	} else {
+		diagnostic = await runDiagnostic(domain);
+		if (!diagnostic) return;
+		diagnostic = await runValidator(domain, diagnostic);
+	}
+
 	if (!DIAGNOSTICS_ONLY) {
-		await createSlideDeck(domain, reviewed);
+		await createSlideDeck(domain, diagnostic);
 	}
 }
 
@@ -1110,31 +1131,60 @@ async function runBatch(domains: string[]) {
 
 // ── Main ──────────────────────────────────────────────────────
 
-const csvPath = process.argv.find(
+const inputPath = process.argv.find(
 	(a) => !a.startsWith("-") && a !== process.argv[0] && a !== process.argv[1],
 );
-if (!csvPath) {
+if (!inputPath) {
 	console.error(
-		"Usage: bun scripts/batch-diagnostics.ts <domains.csv> [--diagnostics-only] [--local]",
+		"Usage: bun scripts/batch-diagnostics.ts <domains.csv | report.md> [--diagnostics-only] [--slides-only] [--local]",
 	);
 	process.exit(1);
 }
 
-const domains = readDomains(csvPath);
-console.log(`Loaded ${domains.length} domains from ${csvPath}`);
-console.log(`Concurrency: ${CONCURRENCY}`);
-console.log(
-	`Mode: ${DIAGNOSTICS_ONLY ? "diagnostics only" : "diagnostics + slides"}${LOCAL ? " (local)" : ""}`,
-);
-console.log(`Output: ${OUTPUT_DIR}\n`);
-
 mkdirSync(OUTPUT_DIR, { recursive: true });
 
-const startTime = Date.now();
-await runBatch(domains);
-const elapsed = Math.round((Date.now() - startTime) / 1000 / 60);
+const isSingleMarkdown = inputPath.endsWith(".md");
 
-console.log(
-	`\n=== Done! ${domains.length} domains processed in ~${elapsed} minutes ===`,
-);
-console.log(`Results in: ${OUTPUT_DIR}/`);
+if (isSingleMarkdown) {
+	// Single markdown file → generate slides for it
+	if (!existsSync(inputPath)) {
+		console.error(`File not found: ${inputPath}`);
+		process.exit(1);
+	}
+	const report = readFileSync(inputPath, "utf-8");
+	// Extract domain from filename: "carrefour.com.br-diagnostic.md" → "carrefour.com.br"
+	const basename = inputPath.split("/").pop() ?? inputPath;
+	const domain = basename.replace(/-diagnostic.*\.md$/, "");
+
+	console.log(`Single report: ${basename}`);
+	console.log(`Domain: ${domain}`);
+	console.log(`Mode: slides from markdown${LOCAL ? " (local)" : ""}`);
+	console.log(`Output: ${OUTPUT_DIR}\n`);
+
+	const startTime = Date.now();
+	await processDomain(domain, report);
+	const elapsed = Math.round((Date.now() - startTime) / 1000);
+	console.log(`\n=== Done in ~${elapsed}s ===`);
+	console.log(`Results in: ${OUTPUT_DIR}/`);
+} else {
+	// CSV mode — batch processing
+	const domains = readDomains(inputPath);
+	const mode = SLIDES_ONLY
+		? "slides only"
+		: DIAGNOSTICS_ONLY
+			? "diagnostics only"
+			: "diagnostics + slides";
+	console.log(`Loaded ${domains.length} domains from ${inputPath}`);
+	console.log(`Concurrency: ${CONCURRENCY}`);
+	console.log(`Mode: ${mode}${LOCAL ? " (local)" : ""}`);
+	console.log(`Output: ${OUTPUT_DIR}\n`);
+
+	const startTime = Date.now();
+	await runBatch(domains);
+	const elapsed = Math.round((Date.now() - startTime) / 1000 / 60);
+
+	console.log(
+		`\n=== Done! ${domains.length} domains processed in ~${elapsed} minutes ===`,
+	);
+	console.log(`Results in: ${OUTPUT_DIR}/`);
+}

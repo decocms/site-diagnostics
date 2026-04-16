@@ -1,0 +1,9 @@
+{
+	"id": "lg-com-2026-04-15",
+	"url": "https://www.lg.com",
+	"title": "Diagnostic Report: LG Electronics (lg.com)",
+	"healthScore": 42,
+	"summary": "LG.com earns approximately 25.6M monthly visits with strong SERP positions, but faces material performance issues (Lighthouse 29/100 mobile), missing Product JSON-LD across all sampled PDPs, and a JavaScript payload exceeding 4MB that creates a 19-43 second Total Blocking Time.",
+	"status": "complete",
+	"createdAt": "2026-04-15T21:45:00Z"
+}

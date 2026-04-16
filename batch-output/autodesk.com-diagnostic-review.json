@@ -1,0 +1,48 @@
+{
+	"issues": [
+		{
+			"check": "WAF_SCREENSHOT",
+			"severity": "low",
+			"location": "Our HTTP fetch tool, browser render tool, and multiple screenshot attempts all returned HTTP 403 (Access Denied) from Akamai's WAF. No WAF-intercepted pages were used as content evidence; all page content analysis is based on Firecrawl-rendered data.",
+			"explanation": "The report explicitly states that 403/Access Denied pages from Akamai's WAF were encountered during screenshot and render attempts. However, the report also clearly disclaims that none of these intercepted pages were used as content evidence — all content analysis came from Firecrawl. This is a near-miss: the WAF pages were not presented as real site content, so the core WAF_SCREENSHOT violation is avoided. Flagging at low severity because the issue is acknowledged and handled correctly, but the presence of WAF interception during screenshot attempts is noted and worth flagging for reviewer awareness."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "medium",
+			"location": "industry practitioners commonly report as increasing CTR by 20–40%",
+			"explanation": "The claim that rich snippets increase CTR by 20–40% is cited only as 'commonly reported industry figure' with no primary source. This is a vague, unverified benchmark of the type commonly hallucinated or misattributed in diagnostic reports. It does not match any known published study and appears in the References section without a real citation."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"UNVERIFIED_FINANCIALS",
+		"WEAK_SOURCES",
+		"CURRENCY_CONFUSION",
+		"SISTER_BRAND_COMPETITOR",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report is largely well-sourced and methodologically transparent; the Deloitte stat is quoted correctly, financials are cited to investor relations, and no fabricated precision stats were detected — but the unsourced '20–40% CTR uplift from rich snippets' claim needs a primary citation or should be removed.",
+	"edits": [
+		{
+			"check": "WAF_SCREENSHOT",
+			"original": "Our HTTP fetch tool, browser render tool, and multiple screenshot attempts all returned **HTTP 403 (Access Denied)** from Akamai's WAF. No WAF-intercepted pages were used as content evidence; all page content analysis is based on Firecrawl-rendered data.",
+			"fixed": "Our HTTP fetch tool, browser render tool, and screenshot attempts all returned **HTTP 403 (Access Denied)** from Akamai's WAF; screenshots of these pages could not be captured. No WAF-intercepted pages were used as content evidence; all page content analysis is based on Firecrawl-rendered data.",
+			"rationale": "Clarifies that screenshots could not be captured due to WAF blocking, making the limitation explicit without overstating it."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "which industry practitioners commonly report as increasing CTR by 20–40%.",
+			"fixed": "which may improve CTR in search results.",
+			"rationale": "The 20–40% CTR figure has no verified primary source and does not match any known published study. Removing the unverified range and softening the claim to avoid presenting a fabricated benchmark as fact."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- \"Rich snippets increase CTR by 20-40%\" — commonly reported industry figure",
+			"fixed": "",
+			"rationale": "Removing the unsourced benchmark from the References section entirely, consistent with the inline fix above. No verified primary source exists for this figure."
+		}
+	],
+	"fixed": true,
+	"editCount": 3,
+	"appliedCount": 3
+}

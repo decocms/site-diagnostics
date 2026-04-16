@@ -1,0 +1,87 @@
+{
+	"issues": [
+		{
+			"check": "DELOITTE_MISQUOTE",
+			"severity": "low",
+			"location": "Every 0.1 seconds of mobile speed improvement correlates with an 8.4% lift in retail conversion (Deloitte, \"Milliseconds Make Millions,\" 2020).",
+			"explanation": "The Deloitte stat is correctly quoted here — 0.1s and 8.4% retail — so this is actually not a misquote. Flagging for review only: the report passes this check correctly."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Unique product descriptions are correlated with a 30-50% increase in organic traffic per PDP (Ahrefs).",
+			"explanation": "This specific claim — that unique product descriptions increase organic traffic by 30-50%, attributed to Ahrefs — is a debunked/fabricated benchmark. Ahrefs has never published this finding. It is listed as a known fabricated stat to flag regardless of attribution."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Products with 50+ reviews convert at 2-3x the rate of products without reviews (Bazaarvoice / Spiegel Research Center).",
+			"explanation": "This misrepresents the Spiegel Research Center finding. Spiegel found that 5 reviews produce a 270% conversion lift — not that 50+ reviews convert at 2-3x. The '50+ reviews' threshold and '2-3x' figure are a distortion of the actual published statistic."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Product recommendations drive 10-30% of e-commerce revenue (McKinsey).",
+			"explanation": "McKinsey never published the claim that product recommendations drive 10-30% of e-commerce revenue. This is a widely circulated fabricated benchmark that is debunked and should not be attributed to McKinsey."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "The average AOV uplift from effective cross-sell is 8-15% (Baymard Institute).",
+			"explanation": "Baymard Institute has never published an 8-15% AOV uplift figure for cross-sell. Baymard's research focuses on UX patterns, not revenue lift benchmarks of this type. This is a fabricated benchmark regardless of the attribution."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"severity": "medium",
+			"location": "an estimated 35–40% of transactions flowing through digital channels as of Q2 2025.[^biz]",
+			"explanation": "This is a specific financial/operational figure. While footnote [^biz] references a Perplexity research summary and a Grupo Elektra Q1 2025 report, the footnote itself acknowledges figures are 'approximate' and sourced via Perplexity AI — not a direct citation of the primary report. A Perplexity-mediated citation for a precise operational figure qualifies as insufficiently sourced."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "Companies with active editorial sections generate approximately 55% more visitors (HubSpot).",
+			"explanation": "HubSpot is a vendor with a commercial interest in content marketing adoption. HubSpot blog posts and self-published 'research' are generic vendor content, not peer-reviewed or independently verified industry benchmarks. Citing HubSpot as a benchmark source for a business intelligence report is a weak-source issue."
+		}
+	],
+	"passed": [
+		"WAF_SCREENSHOT",
+		"CURRENCY_CONFUSION",
+		"SISTER_BRAND_COMPETITOR",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report contains four fabricated benchmarks (Ahrefs 30-50% traffic claim, Spiegel 50+ reviews distortion, McKinsey recommendations revenue share, and Baymard AOV uplift), one insufficiently sourced financial figure, and one weak vendor source (HubSpot), while correctly handling the Deloitte stat, currency, screenshots, and competitor identification.",
+	"edits": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Unique product descriptions are correlated with a 30-50% increase in organic traffic per PDP (Ahrefs). Across tens of thousands of product pages, unique meta descriptions represent one of the highest-leverage SEO improvements available.",
+			"fixed": "Across tens of thousands of product pages, unique meta descriptions represent one of the highest-leverage SEO improvements available.",
+			"rationale": "The Ahrefs '30-50% organic traffic' claim is a fabricated benchmark with no verified source. Removed entirely per instructions."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Products with 50+ reviews convert at 2-3x the rate of products without reviews (Bazaarvoice / Spiegel Research Center).",
+			"fixed": "Products with 5 or more reviews see a 270% higher purchase likelihood (Spiegel Research Center, 2017).",
+			"rationale": "Replaced the distorted '50+ reviews / 2-3x' figure with the correct Spiegel Research Center finding: 5+ reviews → 270% higher purchase likelihood."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Product recommendations drive 10-30% of e-commerce revenue (McKinsey). The average AOV uplift from effective cross-sell is 8-15% (Baymard Institute). On a site with 3.3 million monthly visits and high-ticket items, even a modest cross-sell implementation represents significant incremental revenue.",
+			"fixed": "Personalization, including product recommendations, drives a 5–15% revenue lift (McKinsey, 2021). On a site with 3.3 million monthly visits and high-ticket items, even a modest cross-sell implementation represents significant incremental revenue.",
+			"rationale": "Replaced the fabricated McKinsey '10-30% of e-commerce revenue' claim with the correct McKinsey personalization benchmark (5–15% revenue lift, 2021). Removed the Baymard '8-15% AOV' claim entirely — no verified source exists."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"original": "an estimated 35–40% of transactions flowing through digital channels as of Q2 2025.[^biz]",
+			"fixed": "an estimated 35–40% of transactions flowing through digital channels as of Q2 2025 (as reported by Perplexity-aggregated sources referencing the Grupo Elektra Q1 2025 report; figure is approximate).[^biz]",
+			"rationale": "Added qualifier to flag that this figure is sourced via Perplexity AI aggregation, not a direct primary-source citation, and that it is approximate."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Companies with active editorial sections generate approximately 55% more visitors (HubSpot).",
+			"fixed": "Companies with active editorial sections tend to generate meaningfully more organic visitors — a pattern consistently observed across content marketing literature.",
+			"rationale": "HubSpot is a vendor source with commercial interest in content marketing adoption; the specific 55% figure is not independently verified. Removed the citation and softened the claim."
+		}
+	],
+	"fixed": true,
+	"editCount": 5
+}

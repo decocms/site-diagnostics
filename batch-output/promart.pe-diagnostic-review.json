@@ -1,0 +1,30 @@
+{
+	"issues": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Products with 50+ reviews convert at 2-3x compared to products without reviews (Bazaarvoice / Spiegel).",
+			"explanation": "This is a debunked benchmark. The Spiegel Research Center finding was that 5 reviews produce a 270% conversion lift, not that 50+ reviews produce a 2-3x lift. The '50+ reviews' threshold and '2-3x' figure are fabricated versions of the original stat."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"WAF_SCREENSHOT",
+		"UNVERIFIED_FINANCIALS",
+		"WEAK_SOURCES",
+		"CURRENCY_CONFUSION",
+		"SISTER_BRAND_COMPETITOR",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report is largely well-sourced and methodologically sound, with one flagged issue: the Spiegel/Bazaarvoice review conversion benchmark uses a debunked '50+ reviews = 2-3x' formulation rather than the actual finding of 5 reviews producing a 270% lift.",
+	"edits": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Products with 50+ reviews convert at 2-3x compared to products without reviews (Bazaarvoice / Spiegel).",
+			"fixed": "Products with 5 or more reviews see a 270% higher purchase likelihood compared to products without reviews (Spiegel Research Center, 2017).",
+			"rationale": "The '50+ reviews / 2-3x lift' figure is a fabricated version of the stat. The verified Spiegel Research Center (2017) finding is that 5+ reviews produce a 270% higher purchase likelihood."
+		}
+	],
+	"fixed": true,
+	"editCount": 1
+}

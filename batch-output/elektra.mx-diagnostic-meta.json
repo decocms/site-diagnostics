@@ -1,0 +1,9 @@
+{
+	"id": "elektra-mx-2026-04-15",
+	"url": "https://www.elektra.mx",
+	"title": "Diagnostic Report: Elektra (Grupo Elektra)",
+	"healthScore": 37,
+	"summary": "Elektra.mx, one of Mexico's largest e-commerce retailers on VTEX IO, has a massive catalog (400+ product sitemaps) but suffers from severe mobile performance issues (LCP 21.6s homepage, 30/100 Lighthouse), template-based meta descriptions across products, no customer reviews on PDPs, no cross-sell recommendations, and no editorial content engine. With approximately 3.3M monthly visits and 63% search dependency, these gaps represent significant conversion and organic traffic opportunities.",
+	"status": "complete",
+	"createdAt": "2026-04-15T20:10:00Z"
+}

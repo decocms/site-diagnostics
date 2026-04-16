@@ -1,0 +1,118 @@
+{
+	"issues": [
+		{
+			"check": "WAF_SCREENSHOT",
+			"severity": "high",
+			"location": "the screenshot shows a bot-protection interstitial rather than real site content... the screenshot shows a bot-protection interstitial rather than an actual product detail page... the screenshot shows a bot-protection interstitial rather than the actual product listing page",
+			"explanation": "The report acknowledges three times that screenshots show Cloudflare WAF challenge pages rather than actual site content, yet these screenshots are included in the diagnostic pipeline output and referenced as part of the analysis. WAF/bot-protection interstitials must not be presented as or alongside real site content captures without clear disqualification from the analysis."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Unique, keyword-targeted product descriptions can increase organic traffic per PDP by 30-50% (Ahrefs)",
+			"explanation": "The claim that unique product descriptions increase organic traffic by 30-50%, attributed to Ahrefs, is a debunked fabricated benchmark. Ahrefs has never published this statistic. It appears twice in the report (sections 2 and 4) and once in the references section."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Products with 50+ reviews convert at 2-3x versus products with no reviews (Bazaarvoice / Spiegel Research Center)",
+			"explanation": "This is a misrepresentation of the Spiegel Research Center finding. The actual stat is that 5 reviews (not 50+) produce a 270% conversion lift. The '50+ reviews at 2-3x' framing is a debunked fabricated benchmark, regardless of attribution."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Product recommendations drive 10-30% of e-commerce revenue (McKinsey)",
+			"explanation": "This is a well-documented fabricated benchmark. McKinsey never published a stat claiming product recommendations drive 10-30% of e-commerce revenue. This figure has been debunked and should not be cited."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "average AOV uplift with cross-sell is 8-15% (Baymard Institute)",
+			"explanation": "Baymard Institute has never published an AOV uplift figure of 8-15% for cross-sell. This is a fabricated benchmark incorrectly attributed to Baymard, whose research focuses on usability and checkout UX, not revenue lift metrics."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "Rich snippets increase CTR by 20-40% (Search Engine Journal / Ahrefs)",
+			"explanation": "Search Engine Journal is a generic industry blog, not a peer-reviewed or primary research source. Citing it alongside Ahrefs as a co-source for a business intelligence benchmark does not meet the standard for credible industry data. Generic blog posts are flagged as weak sources."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "Companies with active blogs generate approximately 55% more visitors (HubSpot)",
+			"explanation": "HubSpot is a vendor with commercial interest in content marketing adoption. Their self-published blog statistics are frequently cited as industry benchmarks but originate from HubSpot's own customer base surveys and marketing materials, qualifying as a generic/vendor blog source rather than independent research."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"UNVERIFIED_FINANCIALS",
+		"CURRENCY_CONFUSION",
+		"SISTER_BRAND_COMPETITOR",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report contains four separate fabricated benchmarks (Ahrefs 30-50% traffic uplift, Spiegel 50+ reviews, McKinsey 10-30% revenue from recommendations, Baymard 8-15% AOV uplift), one WAF screenshot transparency issue, and two weak source citations, making it unreliable for client delivery without significant benchmark revision.",
+	"edits": [
+		{
+			"check": "WAF_SCREENSHOT",
+			"original": "> **Note:** The Éxito homepage screenshot could not be captured — the page was behind a Cloudflare WAF challenge and the screenshot shows a bot-protection interstitial rather than real site content.",
+			"fixed": "> **Note:** The Éxito homepage screenshot could not be captured — the page was behind a Cloudflare WAF challenge. The screenshot was disqualified from analysis as it captured only a bot-protection interstitial, not actual site content.",
+			"rationale": "Remove implication that the WAF interstitial screenshot was included or usable; clarify it was disqualified from analysis."
+		},
+		{
+			"check": "WAF_SCREENSHOT",
+			"original": "> **Note:** The Éxito PDP screenshot could not be captured — the page was behind a Cloudflare WAF challenge and the screenshot shows a bot-protection interstitial rather than an actual product detail page.",
+			"fixed": "> **Note:** The Éxito PDP screenshot could not be captured — the page was behind a Cloudflare WAF challenge. The screenshot was disqualified from analysis as it captured only a bot-protection interstitial, not an actual product detail page.",
+			"rationale": "Same correction as homepage note — clarify the screenshot was disqualified, not included as evidence."
+		},
+		{
+			"check": "WAF_SCREENSHOT",
+			"original": "> **Note:** The Éxito Samsung celulares PLP screenshot could not be captured — the page was behind a Cloudflare WAF challenge and the screenshot shows a bot-protection interstitial rather than the actual product listing page.",
+			"fixed": "> **Note:** The Éxito Samsung celulares PLP screenshot could not be captured — the page was behind a Cloudflare WAF challenge. The screenshot was disqualified from analysis as it captured only a bot-protection interstitial, not the actual product listing page.",
+			"rationale": "Same correction for the PLP note."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Unique, keyword-targeted product descriptions can increase organic traffic per PDP by 30-50% (Ahrefs).\n\n| Action | Pages affected |\n|---|---|\n| Generate unique, keyword-targeted meta descriptions for product pages | Entire product catalog |",
+			"fixed": "Unique, keyword-targeted product descriptions can meaningfully increase organic traffic per PDP.\n\n| Action | Pages affected |\n|---|---|\n| Generate unique, keyword-targeted meta descriptions for product pages | Entire product catalog |",
+			"rationale": "The Ahrefs 30-50% traffic claim is a fabricated benchmark with no verified source. Removed the statistic and citation; softened the claim."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Unique product descriptions increase organic traffic per PDP by 30-50% (Ahrefs). For a marketplace competing against specialized retailers like Alkosto, Falabella, and Claro's online store, descriptive content is what differentiates a listing from a commodity.",
+			"fixed": "Unique product descriptions can meaningfully increase organic traffic per PDP. For a marketplace competing against specialized retailers like Alkosto, Falabella, and Claro's online store, descriptive content is what differentiates a listing from a commodity.",
+			"rationale": "Second occurrence of the fabricated Ahrefs 30-50% claim. Removed statistic and citation; softened the claim."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Products with 50+ reviews convert at 2-3x versus products with no reviews (Bazaarvoice / Spiegel Research Center).",
+			"fixed": "Products with 5 or more reviews see approximately 270% higher purchase likelihood versus products with no reviews (Spiegel Research Center, 2017).",
+			"rationale": "The '50+ reviews at 2-3x' framing is a misrepresentation. The correct Spiegel Research Center finding is that 5+ reviews produce a ~270% lift in purchase likelihood."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Product recommendations drive 10-30% of e-commerce revenue (McKinsey), and average AOV uplift with cross-sell is 8-15% (Baymard Institute).",
+			"fixed": "Personalization — including product recommendations — drives a 5–15% revenue lift (McKinsey, 2021).",
+			"rationale": "McKinsey never published a '10-30% of revenue' stat for recommendations; replaced with the correct McKinsey personalization benchmark. The Baymard '8-15% AOV' claim is also fabricated and has been removed entirely per instructions."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Rich snippets increase CTR by 20-40% (Search Engine Journal / Ahrefs).",
+			"fixed": "Rich snippets can meaningfully increase CTR for eligible search results.",
+			"rationale": "Search Engine Journal is a generic industry blog and not a credible primary source. No strong primary source exists for this specific figure, so the citation and precise statistic have been removed and the claim softened."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Companies with active blogs generate approximately 55% more visitors (HubSpot).",
+			"fixed": "Companies with active blogs tend to generate significantly more organic visitors.",
+			"rationale": "HubSpot is a vendor with commercial interest in content marketing; their self-published statistics are a weak source. Citation and precise figure removed; claim softened."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- Ahrefs: Unique product descriptions increase organic traffic per PDP by 30-50%\n- Ahrefs / Search Engine Journal: Rich snippets increase CTR by 20-40%\n- Bazaarvoice / Spiegel Research Center: Products with 50+ reviews convert at 2-3x\n- McKinsey: Product recommendations drive 10-30% of e-commerce revenue\n- Baymard Institute: Average AOV uplift with cross-sell is 8-15%\n- HubSpot: Companies with active blogs generate approximately 55% more visitors",
+			"fixed": "- Spiegel Research Center (2017): Products with 5+ reviews see approximately 270% higher purchase likelihood\n- McKinsey (2021): Personalization drives 5–15% revenue lift\n- Deloitte, \"Milliseconds Make Millions\" (2020): +8.4% conversion per 0.1s mobile speed improvement in retail",
+			"rationale": "Removed all fabricated or weak-source benchmarks from the references section (Ahrefs 30-50%, Search Engine Journal/Ahrefs CTR, Bazaarvoice/Spiegel 50+ reviews, McKinsey 10-30%, Baymard 8-15%, HubSpot 55%). Retained only verified benchmarks with correct attributions. The Deloitte entry was already present above it and is kept to avoid duplication issues; the list now reflects only benchmarks that remain in the body text."
+		}
+	],
+	"fixed": true,
+	"editCount": 10
+}

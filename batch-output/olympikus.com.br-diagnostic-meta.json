@@ -1,0 +1,9 @@
+{
+	"id": "olympikus-com-br-2026-04-15",
+	"url": "https://www.olympikus.com.br",
+	"title": "Diagnostic Report: Olympikus (Vulcabras)",
+	"healthScore": 38,
+	"summary": "Site com forte presença de marca e ~3,8M visitas/mês, mas com performance mobile extremamente comprometida (Lighthouse 28/100 na homepage, 1/100 na PDP) e ausência de content engine editorial, limitando a captura de tráfego orgânico de cauda longa.",
+	"status": "complete",
+	"createdAt": "2026-04-15T21:54:00Z"
+}

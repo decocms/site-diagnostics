@@ -1,0 +1,9 @@
+{
+	"id": "autodesk-com-2026-04-15",
+	"url": "https://www.autodesk.com",
+	"title": "Diagnostic Report: Autodesk (autodesk.com)",
+	"healthScore": 48,
+	"summary": "Autodesk.com scores 48/100 with critical mobile performance issues (LCP 25.7s, 13MB page weight, Performance score 26/100), missing structured data on product pages, and aggressive Akamai bot detection blocking sitemap/robots.txt access. Strong content engine with 297+ editorial pages across 4 blog verticals. Site receives ~36.1M monthly visits with 44.7% from search.",
+	"status": "complete",
+	"createdAt": "2026-04-15T19:26:00Z"
+}

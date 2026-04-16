@@ -1,0 +1,9 @@
+{
+	"id": "promart-pe-2026-04-15",
+	"url": "https://www.promart.pe",
+	"title": "Diagnostic Report: Promart (Intercorp Group)",
+	"healthScore": 34,
+	"summary": "Promart.pe runs on VTEX Legacy Portal with approximately 6.8M monthly visits and a massive product catalog spanning 327 product sitemaps. The site has significant opportunities in structured data (no Product JSON-LD detected), mobile performance (Lighthouse score 30/100, LCP 12.7s), and content engine scaling (only 10 blog posts for a catalog of this size).",
+	"status": "complete",
+	"createdAt": "2026-04-15T22:05:00Z"
+}

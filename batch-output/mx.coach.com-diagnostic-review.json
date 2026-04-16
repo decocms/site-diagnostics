@@ -1,0 +1,71 @@
+{
+	"issues": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Products with 50+ reviews convert at 2-3x versus products with no reviews (Bazaarvoice / Spiegel Research Center)",
+			"explanation": "This is a debunked fabricated benchmark. Spiegel Research Center found that 5 reviews (not 50+) produced a 270% conversion lift. The '50+ reviews at 2-3x' figure is not from Spiegel or Bazaarvoice and is listed as a known fabricated stat to flag."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Ahrefs: Unique product descriptions increase organic traffic per PDP by 30-50%",
+			"explanation": "This statistic — that unique descriptions increase traffic by 30-50% — has never been published by Ahrefs. It is a known fabricated benchmark listed in the check criteria. It also appears in the References section, lending it false credibility."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "Rich snippets increase CTR by 20-40% according to Search Engine Journal and Ahrefs research",
+			"explanation": "Search Engine Journal is a generic SEO blog, not a primary research source. Citing it alongside Ahrefs for a specific quantified benchmark (20-40% CTR lift) does not meet the standard of credible business intelligence. Neither source is a peer-reviewed or methodologically rigorous study."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Bazaarvoice / Spiegel Research Center: Products with 50+ reviews convert at 2-3x vs. no reviews",
+			"explanation": "Repeated in the References section. The '50+ reviews convert at 2-3x' figure is a known debunked benchmark. Spiegel Research Center's actual finding was that 5 reviews drive a 270% lift, not 50+ reviews at 2-3x."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Ahrefs: Unique product descriptions increase organic traffic per PDP by 30-50%",
+			"explanation": "Appears again in the References section. Ahrefs has never published this specific statistic. It is a known fabricated benchmark."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"WAF_SCREENSHOT",
+		"UNVERIFIED_FINANCIALS",
+		"CURRENCY_CONFUSION",
+		"SISTER_BRAND_COMPETITOR",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report contains three distinct fabricated benchmarks (50+ reviews at 2-3x conversion, unique descriptions +30-50% traffic, both falsely attributed to Spiegel/Bazaarvoice and Ahrefs respectively) and relies on a generic SEO blog as a source for a quantified CTR claim; all other checks pass.",
+	"edits": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Products with 50+ reviews convert at 2-3x versus products with no reviews (Bazaarvoice / Spiegel Research Center).",
+			"fixed": "Products with 5 or more reviews see a 270% higher purchase likelihood versus products with no reviews (Spiegel Research Center, 2017).",
+			"rationale": "The '50+ reviews at 2-3x' figure is a known fabricated benchmark. Spiegel Research Center's actual finding was that 5+ reviews produce a 270% lift in purchase likelihood."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Rich snippets increase CTR by 20-40% according to Search Engine Journal and Ahrefs research.",
+			"fixed": "Rich snippets have been widely reported to increase CTR, though estimates vary by industry and query type.",
+			"rationale": "Neither Search Engine Journal nor Ahrefs is a rigorous primary source for this specific quantified claim. Removing the fabricated 20-40% figure and softening the claim to reflect the general consensus without an unverifiable number."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- Ahrefs: Unique product descriptions increase organic traffic per PDP by 30-50%\n- Post-purchase review request emails: 5-15% response rate (industry average)",
+			"fixed": "- Post-purchase review request emails: 5-15% response rate (industry average)",
+			"rationale": "The Ahrefs '30-50% traffic lift from unique descriptions' stat has never been published by Ahrefs and is a known fabricated benchmark. It is removed entirely from the References section per the fix criteria."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- Bazaarvoice / Spiegel Research Center: Products with 50+ reviews convert at 2-3x vs. no reviews",
+			"fixed": "- Spiegel Research Center (2017): Products with 5+ reviews see 270% higher purchase likelihood vs. no reviews",
+			"rationale": "Correcting the fabricated '50+ reviews at 2-3x' benchmark to the actual Spiegel Research Center finding in the References section, consistent with the fix applied in the body of the report."
+		}
+	],
+	"fixed": true,
+	"editCount": 4
+}

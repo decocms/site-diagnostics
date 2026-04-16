@@ -1,0 +1,124 @@
+{
+	"issues": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Products with 50+ reviews convert at 2-3x the rate of those without reviews (Bazaarvoice / Spiegel Research Center)",
+			"explanation": "This is a debunked benchmark. Spiegel Research Center found that 5 reviews yield a 270% conversion lift, not that 50+ reviews produce a 2-3x lift. The '50+ reviews' threshold is a misrepresentation of the original finding."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Average AOV uplift with effective cross-sell is 8-15% (Baymard Institute)",
+			"explanation": "Baymard Institute has never published a benchmark stating that cross-sell produces an 8-15% AOV uplift. This is a fabricated attribution to Baymard and should be removed or properly sourced."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "[^1] https://en.wikipedia.org/wiki/Chedraui *(note: Wikipedia is not a primary source; claims derived from this reference should be independently verified)*",
+			"explanation": "Wikipedia is cited as a reference in the report's source list. Even with the caveat, including Wikipedia as a numbered reference in a business intelligence report is inappropriate. The report itself flags this, but the citation should be removed entirely rather than cautioned."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "Companies with active blogs generate approximately 55% more visitors, according to widely cited content marketing industry figures.",
+			"explanation": "The source is described only as 'widely cited content marketing industry figures' — a generic, unattributed claim with no verifiable source. This does not meet the standard of a credible benchmark citation."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "low",
+			"location": "Rich snippets increase CTR by 20-40% (Search Engine Journal / Ahrefs)",
+			"explanation": "Search Engine Journal is a trade blog, not a primary research source, and Ahrefs blog posts are not peer-reviewed benchmarks. Citing these as authoritative industry benchmarks for a business diagnostic report is a weak sourcing practice."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"severity": "medium",
+			"location": "Chedraui's reported 30%+ digital sales growth in 2024[^biz]",
+			"explanation": "This figure is sourced via Perplexity citing matrixbcg.com, a blog, which the report itself acknowledges 'could not be verified against primary sources.' A specific financial growth percentage without a primary source (earnings report, press release) qualifies as an unverified financial claim."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"severity": "medium",
+			"location": "approximately 84 new stores in 2024, with around 144 reportedly planned for 2025[^biz]",
+			"explanation": "These specific store count figures are sourced only through Perplexity citing a blog (matrixbcg.com). The footnote itself concedes they could not be verified against primary sources, making these unverified operational/financial claims."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"WAF_SCREENSHOT",
+		"CURRENCY_CONFUSION",
+		"SISTER_BRAND_COMPETITOR",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report contains two high-severity fabricated benchmarks (Spiegel '50+ reviews' misquote and false Baymard AOV attribution), two unverified financial/operational figures, and three weak or non-credible source citations; the Deloitte stat, WAF screenshot, currency, sister-brand, and overly-specific-number checks all passed.",
+	"edits": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Products with 50+ reviews convert at 2-3x the rate of those without reviews (Bazaarvoice / Spiegel Research Center).",
+			"fixed": "Products with 5 or more reviews see a 270% higher purchase likelihood (Spiegel Research Center, 2017).",
+			"rationale": "The '50+ reviews / 2-3x' figure misrepresents the Spiegel finding. Replaced with the correct Spiegel Research Center benchmark: 5+ reviews → 270% higher purchase likelihood."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Average AOV uplift with effective cross-sell is 8-15% (Baymard Institute). Complementary recommendations drive higher basket sizes than substitution-only approaches.",
+			"fixed": "Complementary recommendations drive higher basket sizes than substitution-only approaches.",
+			"rationale": "Baymard Institute has never published this benchmark. The fabricated attribution is removed entirely; the surrounding rationale is preserved."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "- [^1] https://en.wikipedia.org/wiki/Chedraui *(note: Wikipedia is not a primary source; claims derived from this reference should be independently verified)*",
+			"fixed": "",
+			"rationale": "Wikipedia is not an appropriate reference for a business intelligence report. The citation is removed entirely as flagged."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Companies with active blogs generate approximately 55% more visitors, according to widely cited content marketing industry figures.",
+			"fixed": "Recipe and meal-planning content can significantly expand organic reach through long-tail keyword capture.",
+			"rationale": "The '55% more visitors' claim has no verifiable primary source. The unattributed figure is removed and the surrounding point is softened to a defensible general claim."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Rich snippets increase CTR by 20-40% (Search Engine Journal / Ahrefs).",
+			"fixed": "Rich snippets have been widely associated with meaningful CTR improvements in organic search results.",
+			"rationale": "Search Engine Journal and Ahrefs blog posts are not authoritative primary research sources. The specific figure and weak attribution are removed; the claim is softened."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"original": "Chedraui's reported 30%+ digital sales growth in 2024[^biz]",
+			"fixed": "Chedraui's estimated 30%+ digital sales growth in 2024[^biz]",
+			"rationale": "This figure is sourced from an unverified blog via Perplexity and acknowledged in the footnote as unconfirmed against primary sources. Adding 'estimated' appropriately qualifies the claim."
+		},
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"original": "approximately 84 new stores in 2024, with around 144 reportedly planned for 2025[^biz]",
+			"fixed": "approximately 84 new stores in 2024, with around 144 reportedly planned for 2025, according to third-party estimates[^biz]",
+			"rationale": "These store-count figures come from an unverified blog source, as the footnote itself concedes. Adding 'according to third-party estimates' appropriately qualifies the claim."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- Baymard Institute: Average AOV uplift with cross-sell 8-15%",
+			"fixed": "",
+			"rationale": "The Baymard cross-sell benchmark is fabricated and has been removed from the body copy; the references section entry must also be removed for consistency."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "- Bazaarvoice / Spiegel Research Center: Products with 50+ reviews convert at 2-3x",
+			"fixed": "- Spiegel Research Center (2017): Products with 5+ reviews see 270% higher purchase likelihood",
+			"rationale": "Updated the references section to match the corrected benchmark used in the body copy."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "- Content marketing industry figures: Companies with active blogs generate ~55% more visitors",
+			"fixed": "",
+			"rationale": "The unattributed '55% more visitors' claim has been removed from the body copy and must also be removed from the references section."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "- Search Engine Journal / Ahrefs: Rich snippets increase CTR by 20-40%",
+			"fixed": "",
+			"rationale": "The weak-sourced CTR figure has been removed from the body copy and must also be removed from the references section."
+		}
+	],
+	"fixed": true,
+	"editCount": 11
+}

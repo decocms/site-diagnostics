@@ -1,0 +1,9 @@
+{
+	"id": "farmaciasdesimilares-com-2026-04-15",
+	"url": "https://www.farmaciasdesimilares.com",
+	"title": "Diagnostic Report: Farmacias de Similares (Grupo por Un País Mejor)",
+	"healthScore": 32,
+	"summary": "A high-traffic pharmacy e-commerce site (~8.6M monthly visits, #3 in Health/Pharmacy in Mexico) with severe performance issues (Lighthouse 8/100 mobile), systematically empty product descriptions and meta descriptions across the catalog, no editorial content engine, and no structured data detected on sampled PDPs. The brand dominates its branded search terms but is missing significant organic traffic from non-branded pharmacy queries.",
+	"status": "complete",
+	"createdAt": "2026-04-15T20:17:00Z"
+}

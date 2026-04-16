@@ -1,0 +1,52 @@
+{
+	"issues": [
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"severity": "medium",
+			"location": "teria gerado aproximadamente US$ 117 milhões em receita",
+			"explanation": "A specific revenue figure (US$117M) is cited with only a vague footnote attributing it to a Glossy article via Perplexity, marked as 'approximate'. This is an unverified financial figure — no direct primary source or official filing is cited. The footnote itself hedges with 'valores aproximados', which is insufficient for a revenue claim this specific."
+		},
+		{
+			"check": "OVERLY_SPECIFIC_UNVERIFIED",
+			"severity": "medium",
+			"location": "taxa de bounce de 35,3% (Similarweb)",
+			"explanation": "A suspiciously precise bounce rate (35.3%) is cited from Similarweb, a third-party estimation tool. Similarweb provides estimated ranges, not precise decimal-level metrics. Presenting this as a specific figure (35.3% rather than ~35%) overstates the precision of the source."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "low",
+			"location": "Empresas com blogs ativos geram aproximadamente 55% mais visitantes (HubSpot).",
+			"explanation": "HubSpot is a vendor/blog publisher with a commercial interest in promoting content marketing. Their self-published statistics are not peer-reviewed business intelligence and fall into the category of generic blog/vendor content. This should not be cited as an industry benchmark."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"WAF_SCREENSHOT",
+		"CURRENCY_CONFUSION",
+		"SISTER_BRAND_COMPETITOR",
+		"FABRICATED_BENCHMARK"
+	],
+	"summary": "The report is largely well-constructed and correctly cites the Deloitte stat, avoids fabricated benchmarks, and handles currency properly, but contains one unverified specific revenue figure, one overly precise third-party metric, and one weak vendor source that should be removed or replaced.",
+	"edits": [
+		{
+			"check": "UNVERIFIED_FINANCIALS",
+			"original": "teria gerado aproximadamente US$ 117 milhões em receita",
+			"fixed": "teria gerado receita expressiva no mercado internacional",
+			"rationale": "The specific US$117M figure is unverified — sourced only from a Glossy article via Perplexity and flagged as approximate with no primary source or official filing. Removing the specific number and replacing with a softer claim avoids presenting an unverified financial figure as fact."
+		},
+		{
+			"check": "OVERLY_SPECIFIC_UNVERIFIED",
+			"original": "taxa de bounce de 35,3% (Similarweb)",
+			"fixed": "taxa de bounce de aproximadamente 35% (Similarweb)",
+			"rationale": "Similarweb provides estimated ranges, not precise decimal-level metrics. Rounding to ~35% better reflects the actual precision of the third-party estimation tool."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Empresas com blogs ativos geram aproximadamente 55% mais visitantes (HubSpot).",
+			"fixed": "Empresas com blogs ativos tendem a gerar significativamente mais tráfego orgânico do que aquelas sem estratégia editorial.",
+			"rationale": "HubSpot is a vendor with a commercial interest in promoting content marketing; their self-published statistics are not peer-reviewed. The citation is removed and the claim is softened to reflect the general, well-supported direction without an unverified specific figure."
+		}
+	],
+	"fixed": true,
+	"editCount": 3
+}

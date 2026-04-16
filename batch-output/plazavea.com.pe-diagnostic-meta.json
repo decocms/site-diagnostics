@@ -1,0 +1,9 @@
+{
+	"id": "plazavea-com-pe-2026-04-15",
+	"url": "https://www.plazavea.com.pe",
+	"title": "Diagnostic Report: PlazaVea (InRetail / Intercorp)",
+	"healthScore": 34,
+	"summary": "PlazaVea's site has strong SERP positioning (#1 for brand and category keywords) and approximately 7.6M monthly visits, but severe performance issues (Lighthouse 29-39, LCP up to 15.8s on PDPs) and structural SEO gaps (no JSON-LD, no reviews, template meta descriptions, no editorial content) limit conversion and organic growth potential across a catalog of 400+ product sitemaps.",
+	"status": "complete",
+	"createdAt": "2026-04-15T22:05:00Z"
+}

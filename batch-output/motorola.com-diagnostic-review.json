@@ -1,0 +1,71 @@
+{
+	"issues": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Product recommendations drive 10-30% of e-commerce revenue (McKinsey)",
+			"explanation": "This is a debunked benchmark. McKinsey never published a stat that product recommendations drive 10-30% of e-commerce revenue. It is a widely circulated fabrication."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "average AOV uplift with cross-sell is 8-15% (Baymard Institute)",
+			"explanation": "Baymard Institute never published an 8-15% AOV uplift figure for cross-sell. This is a fabricated benchmark attributed to a credible source."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"severity": "high",
+			"location": "Products with 50+ reviews convert at 2-3x vs. products without reviews (Bazaarvoice / Spiegel)",
+			"explanation": "The actual Spiegel Research finding is that 5 reviews produce a 270% conversion lift, not that 50+ reviews yield 2-3x. The 50+ threshold is a distortion of the original research."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "Rich snippets increase CTR by 20-40% (Search Engine Journal / Ahrefs)",
+			"explanation": "Search Engine Journal is a generic industry blog and Ahrefs blog posts are not peer-reviewed or primary research. Citing these as authoritative benchmarks for CTR uplift qualifies as a weak source for business intelligence."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"severity": "medium",
+			"location": "Companies with active blogs generate approximately 55% more visitors (HubSpot)",
+			"explanation": "HubSpot is a vendor with a commercial interest in promoting blogging, and this figure originates from HubSpot's own marketing blog rather than independent research. It qualifies as a weak/biased source for an industry benchmark."
+		}
+	],
+	"passed": [
+		"DELOITTE_MISQUOTE",
+		"WAF_SCREENSHOT",
+		"UNVERIFIED_FINANCIALS",
+		"CURRENCY_CONFUSION",
+		"SISTER_BRAND_COMPETITOR",
+		"OVERLY_SPECIFIC_UNVERIFIED"
+	],
+	"summary": "The report contains three fabricated benchmarks (McKinsey recommendations revenue, Baymard AOV uplift, Spiegel 50+ reviews threshold) and two weak-source citations (Search Engine Journal/Ahrefs for CTR, HubSpot for blog traffic); all other checks passed.",
+	"edits": [
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Product recommendations drive 10-30% of e-commerce revenue (McKinsey), and average AOV uplift with cross-sell is 8-15% (Baymard Institute). Given that Motorola sells accessories (cases, buds, chargers, tags) alongside phones, this represents a direct revenue opportunity.",
+			"fixed": "Personalization and product recommendations drive 5-15% revenue lift (McKinsey, 2021). Given that Motorola sells accessories (cases, buds, chargers, tags) alongside phones, this represents a direct revenue opportunity.",
+			"rationale": "Removed the fabricated McKinsey '10-30%' stat and replaced with the verified McKinsey personalization benchmark (5-15% revenue lift, 2021). Removed the fabricated Baymard Institute '8-15% AOV' claim entirely, as no verified source exists."
+		},
+		{
+			"check": "FABRICATED_BENCHMARK",
+			"original": "Products with 50+ reviews convert at 2-3x vs. products without reviews (Bazaarvoice / Spiegel). Both sampled PDPs hover near this threshold.",
+			"fixed": "Products with 5 or more reviews see a 270% higher purchase likelihood (Spiegel Research Center, 2017). Both sampled PDPs exceed this threshold.",
+			"rationale": "Replaced the distorted '50+ reviews = 2-3x' claim with the actual Spiegel Research Center finding: 5+ reviews → 270% higher purchase likelihood. Removed Bazaarvoice co-attribution as it was not the source of this finding. Updated the contextual sentence accordingly."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Rich snippets increase CTR by 20-40% (Search Engine Journal / Ahrefs).",
+			"fixed": "Rich snippets have been widely reported to increase CTR, with industry estimates commonly ranging from 20-40%.",
+			"rationale": "Search Engine Journal and Ahrefs blog posts are not primary or peer-reviewed research. Removed the citation and softened the claim to reflect that this is a commonly cited industry estimate rather than a verified benchmark."
+		},
+		{
+			"check": "WEAK_SOURCES",
+			"original": "Companies with active blogs generate approximately 55% more visitors (HubSpot).",
+			"fixed": "Companies with active blogs are generally reported to generate meaningfully more visitors than those without.",
+			"rationale": "HubSpot is a vendor with a commercial interest in promoting blogging, and the figure originates from their own marketing blog rather than independent research. Removed the specific statistic and citation, and softened the claim to avoid relying on a biased source."
+		}
+	],
+	"fixed": true,
+	"editCount": 4
+}
