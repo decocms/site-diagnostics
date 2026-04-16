@@ -834,8 +834,9 @@ async function createSlideDeck(
 		let brandId: string | undefined;
 		let brandLogoUrl: string | undefined;
 		try {
+			const brandUrl = domain.startsWith("http") ? domain : `https://${domain}`;
 			const brandResult = await mcpClient.callTool(
-				{ name: "import_brand", arguments: { url: domain } },
+				{ name: "import_brand", arguments: { url: brandUrl } },
 				CallToolResultSchema,
 				{ timeout: 120_000 },
 			);
