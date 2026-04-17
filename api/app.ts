@@ -118,6 +118,7 @@ export function createApp(config: AppConfig = {}) {
 						headers: {
 							"content-type": "image/png",
 							"cache-control": "public, max-age=31536000, immutable",
+							"access-control-allow-origin": "*",
 						},
 					});
 				} catch {

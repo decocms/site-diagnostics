@@ -712,10 +712,24 @@ function parseJsonResponse(text: string): unknown {
 		const fenced = trimmed.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
 		if (fenced) return JSON.parse(fenced[1].trim());
 
-		// Find first { or [ and extract to matching close
-		const start = trimmed.search(/[{[]/);
-		if (start === -1) throw new SyntaxError("No JSON found in model response");
-		return JSON.parse(trimmed.slice(start));
+		// Find first { or [ and extract to matching closing bracket
+		const open = trimmed.search(/[{[]/);
+		if (open === -1) throw new SyntaxError("No JSON found in model response");
+		const opener = trimmed[open];
+		const closer = opener === "{" ? "}" : "]";
+		let depth = 0;
+		let inString = false;
+		let escape = false;
+		for (let i = open; i < trimmed.length; i++) {
+			const ch = trimmed[i];
+			if (escape) { escape = false; continue; }
+			if (ch === "\\") { escape = true; continue; }
+			if (ch === '"') { inString = !inString; continue; }
+			if (inString) continue;
+			if (ch === opener) depth++;
+			else if (ch === closer) { depth--; if (depth === 0) return JSON.parse(trimmed.slice(open, i + 1)); }
+		}
+		return JSON.parse(trimmed.slice(open));
 	}
 }
 
