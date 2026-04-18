@@ -9,7 +9,9 @@ import { listDiagnosticsTool } from "./list-diagnostics.ts";
 import { loadDiagnosticTool } from "./load-diagnostic.ts";
 import { renderPageTool } from "./render-page.ts";
 import { researchBusinessTool } from "./research-business.ts";
+import { researchCruxTool } from "./research-crux.ts";
 import { researchKeywordsTool } from "./research-keywords.ts";
+import { researchPagespeedTool } from "./research-pagespeed.ts";
 import { researchSerpTool } from "./research-serp.ts";
 import { researchTrafficTool } from "./research-traffic.ts";
 import { saveDiagnosticTool } from "./save-diagnostic.ts";
@@ -29,6 +31,8 @@ export const tools = [
 	researchKeywordsTool,
 	researchBusinessTool,
 	researchTrafficTool,
+	researchCruxTool,
+	researchPagespeedTool,
 	scrapePageTool,
 	saveDiagnosticTool,
 	listDiagnosticsTool,
