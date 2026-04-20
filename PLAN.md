@@ -194,7 +194,7 @@ if (url.pathname === "/api/pipeline/run") {
   return Response.json({ id: instance.id });
 }
 
-// GET /api/pipeline/status/:id — check progress
+// GET /api/pipeline/status/:id — check progress (scoped to org)
 if (url.pathname.startsWith("/api/pipeline/status/")) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session || session.user.isAnonymous) {
@@ -203,6 +203,13 @@ if (url.pathname.startsWith("/api/pipeline/status/")) {
 
   const id = url.pathname.split("/").pop();
   const instance = await env.DIAGNOSE_PIPELINE.get(id);
+
+  // Verify the run belongs to this user's org
+  const orgId = await resolveOrg(session.user.email);
+  if (instance.params.orgId !== orgId) {
+    return new Response("Not Found", { status: 404 });
+  }
+
   return Response.json({ status: instance.status, output: instance.output });
 }
 ```
@@ -326,12 +333,17 @@ if (url.pathname.startsWith("/api/mcp")) {
     orgId = await resolveOrg(session.user.email);
   }
 
-  // Pass context downstream via headers
-  request.headers.set("x-user-email", isAnon ? "" : session.user.email);
-  request.headers.set("x-org-id", orgId);
-  request.headers.set("x-is-anonymous", String(isAnon));
+  // Clone request with context headers (Workers Request headers are immutable)
+  const enriched = new Request(request, {
+    headers: new Headers([
+      ...request.headers.entries(),
+      ["x-user-email", isAnon ? "" : session.user.email],
+      ["x-org-id", orgId],
+      ["x-is-anonymous", String(isAnon)],
+    ]),
+  });
 
-  return mcpRuntime.fetch(request);
+  return mcpRuntime.fetch(enriched);
 }
 ```
 
@@ -396,21 +408,22 @@ const discovery = await cachedRun(cache, "discover", domain, url, () => discover
 ### Admin purge endpoint
 
 ```
-GET /purge?secret=<ADMIN_SECRET>&key=<single-key>        → purge one key
-GET /purge?secret=<ADMIN_SECRET>&domain=www.example.com   → purge all for domain
+POST /purge  { key: "<single-key>" }         → purge one key
+POST /purge  { domain: "www.example.com" }   → purge all for domain
+
+Header: Authorization: Bearer <ADMIN_SECRET>
 ```
 
-Secret is a simple env var (`ADMIN_SECRET`), compared with `===`. Returns 401 if wrong. Requires at least one of `key` or `domain`.
+Secret is a simple env var (`ADMIN_SECRET`), sent via `Authorization` header (not query params — avoids leaking in logs/referers). Returns 401 if wrong. Requires `key` or `domain` in the JSON body.
 
 ```typescript
-if (url.pathname === "/purge") {
-  const secret = url.searchParams.get("secret");
-  if (secret !== env.ADMIN_SECRET) {
+if (url.pathname === "/purge" && request.method === "POST") {
+  const token = request.headers.get("authorization")?.replace("Bearer ", "");
+  if (token !== env.ADMIN_SECRET) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const key = url.searchParams.get("key");
-  const domain = url.searchParams.get("domain");
+  const { key, domain } = await request.json();
 
   if (key) {
     await cache.delete(key);
@@ -423,7 +436,7 @@ if (url.pathname === "/purge") {
     return Response.json({ purged: keys });
   }
 
-  return new Response("Missing key or domain param", { status: 400 });
+  return new Response("Missing key or domain in body", { status: 400 });
 }
 ```
 
