@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isPrivateHost } from "./browserless.ts";
+import { isPrivateHost } from "../../src/lib/ssrf.ts";
 
 export const urlInput = z
 	.string()

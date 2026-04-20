@@ -1,11 +1,11 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
+import { extractSeoMeta, extractSitemapUrls } from "../../src/lib/html.ts";
 import {
 	onPagePages,
 	onPageTaskPost,
 	pollOnPageTask,
 } from "../lib/dataforseo.ts";
-import { extractSeoMeta, extractSitemapUrls } from "../lib/html.ts";
 import { urlInput } from "../lib/schemas.ts";
 import type { Env } from "../types/env.ts";
 
