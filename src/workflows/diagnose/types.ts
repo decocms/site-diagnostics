@@ -258,3 +258,39 @@ export interface ResearchData {
 	serp: SerpData[];
 	keywords: KeywordData[];
 }
+
+// ── Proprietary Source Configs ────────────────────────────
+
+export interface CdnConfig {
+	endpoint: string;
+	token: string;
+	domain?: string;
+}
+
+export interface HyperDxConfig {
+	apiKey: string;
+	serviceNames: string[];
+}
+
+export interface BigQueryConfig {
+	projectId: string;
+	dataset: string;
+	credentials: Record<string, unknown>;
+}
+
+export interface RepoConfig {
+	owner: string;
+	repo: string;
+	token: string;
+}
+
+/**
+ * Per-org credential bundle stored as JSON in the `org_credentials.creds`
+ * column. Each key is optional — orgs configure only the sources they own.
+ */
+export interface OrgCredentials {
+	cdn?: CdnConfig;
+	hyperdx?: HyperDxConfig;
+	bigquery?: BigQueryConfig;
+	repo?: RepoConfig;
+}
