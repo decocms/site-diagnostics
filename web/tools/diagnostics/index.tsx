@@ -1,6 +1,7 @@
 import { Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMcpApp } from "@/context.tsx";
+import { useModelContext } from "@/hooks/use-model-context.ts";
 import type { Diagnostic } from "../../../api/types/diagnostic.ts";
 import { buildDiagnoseMessage } from "../../../shared/diagnostics.ts";
 import {
@@ -163,6 +164,7 @@ export default function DiagnosticsPage() {
 	const app = useMcpApp();
 	const [view, setView] = useState<View>({ type: "home" });
 	const [diagnostics, setDiagnostics] = useState<DiagnosticMeta[]>([]);
+	useModelContext(app, view, diagnostics);
 	const [loadingHistory, setLoadingHistory] = useState(true);
 	const pollRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
