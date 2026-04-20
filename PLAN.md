@@ -76,21 +76,52 @@ id = "75797ec99ceb414bb23d40744f9d369f"
 
 Everything else (API keys, secrets) stays as env vars / wrangler secrets — same as today.
 
-### Pipeline layer
+### MCP tools = pipeline steps
+
+The old low-level MCP tools (fetchPage, captureHar, lighthouse, etc.) become internal implementation details. The MCP server exposes **step-level tools** instead:
+
+| Tool | What it does | Cached |
+|------|-------------|--------|
+| `discover` | Crawl, sitemap, robots, homepage meta, editorial probes | 24h |
+| `analyze_perf` | HAR + Lighthouse + screenshots on samples | 24h |
+| `analyze_seo` | SEO audit + page meta + JSON-LD sampling | 24h |
+| `analyze_content` | Scrape PDPs + editorial, review/cross-sell detection | 24h |
+| `research` | Traffic, business context, SERP, keywords | 7d |
+| `synthesize` | Multi-agent LLM synthesis into final report | never |
+
+The agent prompt for Claude Code / Claude Desktop shrinks to:
+```
+Run these tools in order for the given URL:
+1. discover(url) → site structure + samples
+2. analyze_perf, analyze_seo, analyze_content, research → run in parallel
+3. synthesize(all outputs) → final report
+```
+
+**No server-side LLM key needed** — the MCP client provides the intelligence. The server is a pure data collection engine.
+
+### Agent-native flow (Claude Code)
+
+When connected from Claude Code with a repo open:
+```
+Claude Code
+  ├── site-diagnostics MCP  →  discover, analyzePerf, analyzeSeo, analyzeContent, research
+  ├── the repo on disk       →  IS the repo analysis (grep, read package.json, check code)
+  └── Claude itself          →  IS the synthesizer (writes the report directly)
+```
+
+Proprietary sources move to the agent layer — they're not pipeline steps on this server:
+- **Repo analysis**: Claude Code has the filesystem. No `sourceRepo` step needed.
+- **HyperDX / BigQuery / CDN**: Can be separate MCPs, direct API calls, or tools the agent has access to.
+
+The sub-agent escape hatch (section 12) is free in this mode — Claude Code can verify false positives by reading the actual source code.
+
+### Automated pipeline (headless)
+
+For batch runs and cron jobs, `runDiagnosePipeline()` still exists as a standalone function that composes all steps including synthesis. This path DOES need a server-side `ANTHROPIC_API_KEY`. Both modes use the same pure step functions underneath.
 
 ```
-          MCP tools (ad-hoc)      Pipeline (automation)
-          individual calls        deterministic sequence
-          agent-driven            code-driven
-                                       │
-                        ┌──────────────────────────────┐
-                        │  Pure functions composed      │
-                        │  into a workflow.             │
-                        │  Orchestrator-agnostic.       │
-                        │  Can wire to inngest,         │
-                        │  temporal, or just            │
-                        │  Promise.all in a script.     │
-                        └──────────────────────────────┘
+Interactive (MCP):        Agent calls step tools → agent synthesizes
+Automated (pipeline):     runDiagnosePipeline() → server-side synthesis
 ```
 
 ---
@@ -785,7 +816,6 @@ Client opens login page
 ## 8. What Stays, What Changes
 
 ### Stays the same
-- MCP tools in `api/tools/` — still exposed for ad-hoc agent use
 - Integration clients (browserless, dataforseo, firecrawl, etc.) — refactored into `src/integrations/`
 - MCP App UI in `web/` — still renders reports
 - R2 storage for screenshots and saved reports
@@ -794,13 +824,14 @@ Client opens login page
 - Data integrity rules (from vtexday branch)
 
 ### Changes
-- `shared/diagnostics.ts` (500-line monolith prompt) → split into 4 small agent prompts + 1 synthesizer prompt
+- `shared/diagnostics.ts` (500-line monolith prompt) → split into 4 small agent prompts + 1 synthesizer prompt (used by automated pipeline only)
+- 14 low-level MCP tools → ~6 step-level MCP tools (low-level tools become internal)
 - Tool orchestration moves from prompt to code
 - New `src/workflows/diagnose/` directory with pure functions
 - New `src/auth/` with BetterAuth + org resolution
 - New `src/cache/` with KVStore interface
-- New proprietary source integrations: CDN data lake, HyperDx, BigQuery, GitHub repo
-- Pipeline endpoint (`/api/pipeline/run`) alongside MCP endpoint
+- Proprietary sources (repo, HyperDX, BigQuery) move to agent layer — not pipeline steps on this server
+- CDN data lake stays on this server (proprietary API needs server-side auth)
 
 ### New files to create
 
@@ -980,7 +1011,30 @@ The HTTP layer can wire this to SSE for the UI, or just log it. The pure functio
 
 ---
 
-## 12. Implementation Order
+## 12. Future: Sub-Agent Escape Hatch
+
+The pipeline is deterministic-first — cross-validation of false positives (e.g., DataForSEO says "no JSON-LD" but the HTML has it) is handled in code within the step itself. However, some future verification cases may require judgment rather than parsing. For those, a structured sub-agent call inside a step could work:
+
+```typescript
+if (noJsonLdDetected) {
+  const { isFalsePositive } = await subAgent(
+    "The API returned saying PDPs have no JSON-LD. URLs tested: {urls}. Check the actual page source to confirm.",
+    sandboxContext,
+    { output: z.object({ isFalsePositive: z.boolean() }) }
+  );
+}
+```
+
+This is additive — doesn't require rearchitecting the pipeline. Each step stays a pure function; it just optionally calls an LLM for judgment when code-level checks aren't sufficient. Worth adding when the list of cases that need judgment (not just parsing) grows long enough. Examples that might justify it:
+- "Is this product description actually unique or a template with the name swapped?"
+- "Does this repo's rendering logic actually emit the structured data at runtime?" (needs code comprehension, not HTML parsing)
+- "Is this 404 a real missing page or a bot-protection false block?"
+
+Until then: keep a running list of cases where you wish you had a sub-agent, and build the pattern when the list justifies it.
+
+---
+
+## 13. Implementation Order
 
 ### Phase 1: Foundation
 1. Set up `src/` directory structure
@@ -1023,13 +1077,12 @@ The HTTP layer can wire this to SSE for the UI, or just log it. The pure functio
 
 ---
 
-## 13. Environment Variables
+## 14. Environment Variables
 
 ### Required (all environments)
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `ANTHROPIC_API_KEY` | Claude API for synthesis agents | `sk-ant-...` |
 | `BROWSERLESS_TOKEN` | Browserless.io API token (HAR, Lighthouse, screenshots, render) | `...` |
 | `FIRECRAWL_API_KEY` | Firecrawl API for crawl_site + scrape_page | `fc-...` |
 | `DATAFORSEO_API_KEY` | DataForSEO for audit_seo, research_serp, research_keywords | `...` |
@@ -1049,6 +1102,7 @@ The HTTP layer can wire this to SSE for the UI, or just log it. The pure functio
 | `S3_BUCKET` | R2 bucket name | `site-diagnostics` |
 | `PERPLEXITY_API_KEY` | Perplexity API for research_business | skips business research if missing |
 | `APIFY_API_TOKEN` | Apify API for research_traffic (Similarweb) | skips traffic research if missing |
+| `ANTHROPIC_API_KEY` | Claude API for automated/batch pipeline synthesis | not needed for MCP interactive mode |
 
 ### Local dev only
 
