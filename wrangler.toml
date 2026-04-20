@@ -12,3 +12,12 @@ enabled = true
 [[routes]]
 pattern = "site-diagnostics.decocms.com"
 custom_domain = true
+
+[[d1_databases]]
+binding = "D1"
+database_name = "site-diagnostics"
+database_id = "b703371e-0bbe-4eab-9a4b-8aee9643cb22"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "75797ec99ceb414bb23d40744f9d369f"
