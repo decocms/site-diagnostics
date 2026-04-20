@@ -115,13 +115,96 @@ Proprietary sources move to the agent layer — they're not pipeline steps on th
 
 The sub-agent escape hatch (section 12) is free in this mode — Claude Code can verify false positives by reading the actual source code.
 
-### Automated pipeline (headless)
+### Automated pipeline (Cloudflare Workflows)
 
-For batch runs and cron jobs, `runDiagnosePipeline()` still exists as a standalone function that composes all steps including synthesis. This path DOES need a server-side `ANTHROPIC_API_KEY`. Both modes use the same pure step functions underneath.
+For batch runs and cron jobs, the pipeline runs as a **Cloudflare Workflow** — durable execution with per-step retries and crash recovery. This path DOES need a server-side `ANTHROPIC_API_KEY`.
+
+Both modes use the same pure step functions underneath:
 
 ```
 Interactive (MCP):        Agent calls step tools → agent synthesizes
-Automated (pipeline):     runDiagnosePipeline() → server-side synthesis
+Automated (pipeline):     CF Workflow calls step functions → server-side synthesis
+```
+
+#### Workflow definition
+
+```typescript
+// src/workflows/diagnose/workflow.ts
+export class DiagnosePipeline extends WorkflowEntrypoint {
+  async run(event, step) {
+    const { url, orgId, sources } = event.payload;
+    const lang = url.includes(".br") ? "pt-BR" : "en";
+
+    const discovery = await step.do("discover", () => discover(url));
+    const samples = await step.do("select-samples", () => selectSamples(discovery));
+
+    const [perf, seo, content, researchData] = await Promise.all([
+      step.do("analyze-perf", () => analyzePerformance(samples)),
+      step.do("analyze-seo", () => analyzeSeo(url, samples)),
+      step.do("analyze-content", () => analyzeContent(samples, discovery)),
+      step.do("research", () => research(url, discovery)),
+    ]);
+
+    const cdn = sources.cdn
+      ? await step.do("source-cdn", () => sourceCdn(sources.cdn))
+      : null;
+
+    const bundle = { discovery, samples, perf, seo, content, research: researchData, cdn, hyperdx: null, bigquery: null, repo: null };
+
+    const report = await step.do("synthesize", () => synthesize(bundle, lang));
+    const actions = await step.do("actions", () => proposeActions(report, null));
+
+    await step.do("save", () => saveDiagnostic(report, orgId));
+
+    return { report, actions };
+  }
+}
+```
+
+Each `step.do()` is durable — result persists, retries on failure, pipeline resumes from last completed step on crash.
+
+#### Wrangler binding
+
+```toml
+[[workflows]]
+name = "diagnose-pipeline"
+binding = "DIAGNOSE_PIPELINE"
+class_name = "DiagnosePipeline"
+```
+
+#### API endpoints (auth-gated)
+
+Both endpoints require authentication. Anonymous users cannot trigger or query pipeline runs — they can only use the MCP step tools interactively.
+
+```typescript
+// POST /api/pipeline/run — start a pipeline
+if (url.pathname === "/api/pipeline/run") {
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session || session.user.isAnonymous) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const { targetUrl } = await request.json();
+  const orgId = await resolveOrg(session.user.email);
+  const sources = orgId ? await loadOrgCredentials(orgId) : {};
+
+  const instance = await env.DIAGNOSE_PIPELINE.create({
+    params: { url: targetUrl, orgId, sources },
+  });
+  return Response.json({ id: instance.id });
+}
+
+// GET /api/pipeline/status/:id — check progress
+if (url.pathname.startsWith("/api/pipeline/status/")) {
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session || session.user.isAnonymous) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const id = url.pathname.split("/").pop();
+  const instance = await env.DIAGNOSE_PIPELINE.get(id);
+  return Response.json({ status: instance.status, output: instance.output });
+}
 ```
 
 ---
@@ -1116,6 +1199,7 @@ Until then: keep a running list of cases where you wish you had a sub-agent, and
 |---------|------|-------------|
 | `D1` | D1 Database | BetterAuth tables + org_credentials + email mappings |
 | `CACHE` | KV Namespace | Pipeline step cache with per-step TTLs |
+| `DIAGNOSE_PIPELINE` | Workflow | Durable pipeline execution for automated/batch runs |
 
 In local dev these are replaced by:
 - `D1` → `bun:sqlite` file at `data/auth.sqlite`
