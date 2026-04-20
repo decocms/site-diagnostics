@@ -294,3 +294,96 @@ export interface OrgCredentials {
 	bigquery?: BigQueryConfig;
 	repo?: RepoConfig;
 }
+
+// ── Proprietary Source Outputs ────────────────────────────
+
+export interface TimeSeriesPoint {
+	t: string;
+	v: number;
+}
+
+export interface CdnData {
+	requestsPerSecond: TimeSeriesPoint[];
+	topPages: Array<{ path: string; hits: number; avgResponseTimeMs: number }>;
+	geoDistribution: Array<{ country: string; percentage: number }>;
+	cacheHitRate: number;
+	cacheHitByPath: Array<{ pattern: string; hitRate: number }>;
+	edgeVsOriginRatio: number;
+	ttfbP50: number;
+	ttfbP95: number;
+	ttfbP99: number;
+	errorRate: number;
+	errorsByStatus: Array<{ status: number; count: number; topPaths: string[] }>;
+	error5xxTrend: TimeSeriesPoint[];
+	totalBandwidthGB: number;
+	avgResponseSizeKB: number;
+}
+
+export interface HyperDxData {
+	errorRate: number;
+	topErrors: Array<{
+		message: string;
+		count: number;
+		firstSeen: string;
+		lastSeen: string;
+		service: string;
+	}>;
+	latency: { p50: number; p95: number; p99: number };
+	errorPaths: Array<{ path: string; count: number; statusCode: number }>;
+	recentSpikes: Array<{ timestamp: string; metric: string; value: number }>;
+}
+
+export interface AnalyticsData {
+	bounceByPageType: Record<string, number>;
+	conversionFunnel: Array<{ step: string; sessions: number; dropoff: number }>;
+	trafficTrend: Array<{
+		date: string;
+		sessions: number;
+		users: number;
+		revenue: number | null;
+	}>;
+	deviceSplit: { desktop: number; mobile: number; tablet: number };
+	topLandingPages: Array<{
+		path: string;
+		sessions: number;
+		bounceRate: number;
+		avgDuration: number;
+		revenue: number | null;
+	}>;
+	searchConsole: Array<{
+		query: string;
+		clicks: number;
+		impressions: number;
+		ctr: number;
+		position: number;
+	}>;
+}
+
+export interface RepoData {
+	framework: string | null;
+	packageManager: string | null;
+	deps: Array<{
+		name: string;
+		version: string;
+		latest: string | null;
+		outdated: boolean;
+	}>;
+	bundleSize: {
+		totalKB: number | null;
+		byRoute: Array<{ route: string; kb: number }>;
+	};
+	antiPatterns: Array<{
+		file: string;
+		line: number;
+		pattern: string;
+		severity: "high" | "medium" | "low";
+		suggestion: string;
+	}>;
+	recentCommits: Array<{
+		sha: string;
+		message: string;
+		author: string;
+		date: string;
+	}>;
+	openIssues: number;
+}
