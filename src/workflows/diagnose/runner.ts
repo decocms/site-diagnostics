@@ -5,6 +5,12 @@ import { analyzePerformance } from "./03-analyze-perf.ts";
 import { analyzeSeo } from "./04-analyze-seo.ts";
 import { analyzeContent } from "./05-analyze-content.ts";
 import { research } from "./06-research.ts";
+import {
+	type DataBundle,
+	type DiagnosticReport,
+	synthesize,
+} from "./11-synthesize.ts";
+import { type ActionProposal, proposeActions } from "./12-actions.ts";
 import type {
 	ContentData,
 	DiscoveryResult,
@@ -27,6 +33,11 @@ export interface PipelineResult {
 	seo: SeoData;
 	content: ContentData;
 	research: ResearchData;
+}
+
+export interface FullPipelineResult extends PipelineResult {
+	report: DiagnosticReport;
+	actions: ActionProposal[];
 }
 
 export type ProgressStatus = "running" | "done" | "error" | "skipped";
@@ -116,4 +127,58 @@ export async function runPublicPipeline(
 	onProgress?.({ step: "research", status: "done" });
 
 	return { discovery, samples, perf, seo, content, research: researchData };
+}
+
+// ── Full Pipeline (includes synthesis) ───────────────────
+
+/**
+ * Runs the full diagnostic pipeline: data collection (steps 1-6)
+ * + multi-agent synthesis (step 11) + action proposals (step 12).
+ * Requires ANTHROPIC_API_KEY for the synthesis step.
+ */
+export async function runFullPipeline(
+	config: PipelineConfig,
+	cache: KVStore,
+	onProgress?: ProgressCallback,
+): Promise<FullPipelineResult> {
+	const publicResult = await runPublicPipeline(config, cache, onProgress);
+	const {
+		discovery,
+		samples,
+		perf,
+		seo,
+		content,
+		research: researchData,
+	} = publicResult;
+
+	const url = config.url;
+	const lang = new URL(url).hostname.endsWith(".br") ? "pt-BR" : "en";
+
+	// Step 11: Synthesize (multi-agent, never cached)
+	onProgress?.({ step: "synthesize", status: "running" });
+	const bundle: DataBundle = {
+		discovery,
+		samples,
+		perf,
+		seo,
+		content,
+		research: researchData,
+	};
+	const report = await synthesize(bundle, lang);
+	onProgress?.({
+		step: "synthesize",
+		status: "done",
+		message: `Health score: ${report.healthScore}/100`,
+	});
+
+	// Step 12: Actions (never cached)
+	onProgress?.({ step: "actions", status: "running" });
+	const actions = proposeActions(report.findings);
+	onProgress?.({
+		step: "actions",
+		status: "done",
+		message: `${actions.length} actions proposed`,
+	});
+
+	return { ...publicResult, report, actions };
 }
