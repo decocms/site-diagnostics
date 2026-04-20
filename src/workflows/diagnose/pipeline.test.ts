@@ -12,10 +12,7 @@ const mockDiscovery: DiscoveryResult = {
 				"https://example.com/product/shoes-2/p",
 				"https://example.com/product/shirt-1/p",
 			],
-			plp: [
-				"https://example.com/shoes",
-				"https://example.com/shirts",
-			],
+			plp: ["https://example.com/shoes", "https://example.com/shirts"],
 			blog: ["https://example.com/blog/post-1"],
 			institutional: ["https://example.com/about"],
 		},
@@ -71,7 +68,10 @@ describe("selectSamples", () => {
 		const noEditorial = {
 			...mockDiscovery,
 			editorial: { paths: [{ path: "/blog", exists: false, linkCount: 0 }] },
-			crawl: { ...mockDiscovery.crawl, sampleUrls: { ...mockDiscovery.crawl.sampleUrls, blog: [] } },
+			crawl: {
+				...mockDiscovery.crawl,
+				sampleUrls: { ...mockDiscovery.crawl.sampleUrls, blog: [] },
+			},
 		};
 		const samples = selectSamples(noEditorial);
 		expect(samples.editorial).toEqual([]);

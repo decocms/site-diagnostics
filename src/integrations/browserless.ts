@@ -333,7 +333,6 @@ function categorizeType(mime: string): string {
 	return "other";
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: HAR entry shape from chrome-har
 function analyzeHarEntries(
 	entries: any[],
 	baseUrl: string,
@@ -697,7 +696,6 @@ const DIAGNOSTIC_AUDIT_IDS = [
 	"third-party-summary",
 ] as const;
 
-// biome-ignore lint/suspicious/noExplicitAny: Lighthouse JSON is untyped
 function extractAudit(
 	audits: Record<string, any>,
 	id: string,
@@ -713,7 +711,6 @@ function extractAudit(
 	};
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: Lighthouse JSON is untyped
 function processLighthouseResult(
 	result: Record<string, any>,
 	device: "desktop" | "mobile",

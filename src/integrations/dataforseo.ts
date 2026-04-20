@@ -262,7 +262,6 @@ export async function onPagePages(
 	const data = await response.json();
 	const items = data.tasks?.[0]?.result?.[0]?.items ?? [];
 
-	// biome-ignore lint/suspicious/noExplicitAny: DataForSEO response
 	return items.map(
 		(item: any): OnPagePageItem => ({
 			url: item.url ?? "",
@@ -333,7 +332,6 @@ export async function keywordsForKeywords(
 	const data = await response.json();
 	const items = data.tasks?.[0]?.result ?? [];
 
-	// biome-ignore lint/suspicious/noExplicitAny: DataForSEO response
 	return items.map((item: any) => ({
 		keyword: item.keyword as string,
 		volume: (item.search_volume as number) ?? 0,
