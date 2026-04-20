@@ -1,5 +1,6 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
+import { extractMeta, extractVisibleText } from "../../src/lib/html.ts";
 import {
 	getBrowserlessToken,
 	getBrowserMode,
@@ -7,7 +8,6 @@ import {
 	resolveBrowserEndpoint,
 	withBrowserPage,
 } from "../lib/browserless.ts";
-import { extractMeta, extractVisibleText } from "../lib/html.ts";
 import { urlInput } from "../lib/schemas.ts";
 import type { Env } from "../types/env.ts";
 

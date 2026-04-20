@@ -1,11 +1,11 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { isPrivateHost } from "../lib/browserless.ts";
 import {
 	extractLinks,
 	extractSeoMeta,
 	extractSitemapUrls,
-} from "../lib/html.ts";
+} from "../../src/lib/html.ts";
+import { isPrivateHost } from "../../src/lib/ssrf.ts";
 import { sanitizeHeaders, urlInput } from "../lib/schemas.ts";
 import type { Env } from "../types/env.ts";
 
