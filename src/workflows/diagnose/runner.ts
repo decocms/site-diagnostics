@@ -152,7 +152,7 @@ export async function runFullPipeline(
 	} = publicResult;
 
 	const url = config.url;
-	const lang = url.includes(".br") ? "pt-BR" : "en";
+	const lang = new URL(url).hostname.endsWith(".br") ? "pt-BR" : "en";
 
 	// Step 11: Synthesize (multi-agent, never cached)
 	onProgress?.({ step: "synthesize", status: "running" });

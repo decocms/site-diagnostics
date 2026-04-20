@@ -31,14 +31,13 @@ const mockBundle: DataBundle = {
 		},
 		sitemap: {
 			exists: true,
-			productSitemapUrls: [
-				"https://www.example.com.br/sitemap-products-1.xml",
-			],
+			productSitemapUrls: ["https://www.example.com.br/sitemap-products-1.xml"],
 			totalProductUrls: 892,
 		},
 		robots: {
 			exists: true,
-			rules: "User-agent: *\nAllow: /\nSitemap: https://www.example.com.br/sitemap.xml",
+			rules:
+				"User-agent: *\nAllow: /\nSitemap: https://www.example.com.br/sitemap.xml",
 			sitemapUrls: ["https://www.example.com.br/sitemap.xml"],
 		},
 		homepage: {
