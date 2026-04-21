@@ -23,6 +23,8 @@ export interface AppConfig {
 	authBaseURL?: string;
 	/** Override the auth secret. Falls back to BETTER_AUTH_SECRET env var. */
 	authSecret?: string;
+	/** MCP OAuth login page URL. Defaults to /login. */
+	loginPage?: string;
 }
 
 const colors = {
@@ -53,7 +55,7 @@ function getMethodColor(method: string): string {
 }
 
 export function createApp(config: AppConfig = {}) {
-	const { clientHTML, db, authBaseURL, authSecret } = config;
+	const { clientHTML, db, authBaseURL, authSecret, loginPage } = config;
 
 	const getClientHTML = clientHTML
 		? () => Promise.resolve(clientHTML)
@@ -77,6 +79,7 @@ export function createApp(config: AppConfig = {}) {
 				db,
 				baseURL: authBaseURL,
 				secret: authSecret ?? process.env.BETTER_AUTH_SECRET,
+				loginPage,
 			})
 		: null;
 

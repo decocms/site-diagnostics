@@ -7,6 +7,7 @@ interface WorkerEnv {
 	D1?: unknown;
 	BETTER_AUTH_URL?: string;
 	BETTER_AUTH_SECRET?: string;
+	LOGIN_PAGE?: string;
 }
 
 type AppFetch = ReturnType<typeof createApp>["fetch"];
@@ -22,6 +23,7 @@ function resolveApp(env: WorkerEnv): AppFetch {
 		db,
 		authBaseURL: env.BETTER_AUTH_URL,
 		authSecret: env.BETTER_AUTH_SECRET,
+		loginPage: env.LOGIN_PAGE,
 	});
 	cached = app.fetch;
 	return cached;
