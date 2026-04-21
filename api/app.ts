@@ -8,7 +8,7 @@ import { loadOrgCredentials, resolveOrg } from "../src/auth/resolve-org.ts";
 import { getScreenshot } from "./lib/storage.ts";
 import { prompts } from "./prompts/index.ts";
 import { createDiagnoseAppResource } from "./resources/diagnose.ts";
-import { tools } from "./tools/index.ts";
+import { proprietaryTools, publicTools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
 
 // biome-ignore lint/suspicious/noExplicitAny: runtime.fetch signature compatibility
@@ -65,14 +65,27 @@ export function createApp(config: AppConfig = {}) {
 					"utf-8",
 				);
 
-	const runtime = withRuntime<Env, typeof StateSchema>({
-		configuration: {
-			state: StateSchema,
-		},
-		tools,
+	// Two runtimes with different tool surfaces. The default /api/mcp
+	// endpoint routes to `publicRuntime` (anyone can use it, no auth).
+	// /api/mcp?proprietary routes to `fullRuntime` (requires auth) so
+	// proprietary tools are invisible to unauthenticated MCP clients —
+	// the model never sees a tool it can't call.
+	const publicRuntime = withRuntime<Env, typeof StateSchema>({
+		configuration: { state: StateSchema },
+		tools: publicTools,
 		prompts,
 		resources: [createDiagnoseAppResource(getClientHTML)],
 	});
+
+	const fullRuntime =
+		proprietaryTools.length > 0
+			? withRuntime<Env, typeof StateSchema>({
+					configuration: { state: StateSchema },
+					tools: [...publicTools, ...proprietaryTools],
+					prompts,
+					resources: [createDiagnoseAppResource(getClientHTML)],
+				})
+			: publicRuntime;
 
 	const auth: Auth | null = db
 		? createAuth({
@@ -115,6 +128,24 @@ export function createApp(config: AppConfig = {}) {
 		};
 	}
 
+	const ANON_CONTEXT: AuthContext = {
+		email: "",
+		orgId: "",
+		isAnonymous: true,
+		loadCredentials: async () => ({}),
+	};
+
+	function unauthorizedForProprietary(req: Request, message: string): Response {
+		const origin = new URL(req.url).origin;
+		return new Response(message, {
+			status: 401,
+			headers: {
+				"WWW-Authenticate": `Bearer resource_metadata="${origin}/api/auth/.well-known/oauth-protected-resource"`,
+				"content-type": "text/plain; charset=utf-8",
+			},
+		});
+	}
+
 	function withAuth(fetcher: Fetcher): Fetcher {
 		return async (req: Request, ...args) => {
 			const url = new URL(req.url);
@@ -124,58 +155,54 @@ export function createApp(config: AppConfig = {}) {
 				return auth.handler(req);
 			}
 
-			// Bind the per-request auth context so downstream handlers can read
-			// it via `authContext.get()`. When auth isn't configured (e.g.
-			// Workers without a D1 binding) we still bind a default-anonymous
-			// context so there's no unguarded fallthrough.
-			if (url.pathname.startsWith("/api/mcp")) {
-				const ctx = await buildAuthContext(req, url);
-				return authContext.run(ctx, () => fetcher(req, ...args));
+			if (!url.pathname.startsWith("/api/mcp")) {
+				return fetcher(req, ...args);
 			}
 
-			return fetcher(req, ...args);
-		};
-	}
+			// Default /api/mcp path: fully anonymous, no session lookup, no DB
+			// touch. Keeps zero-friction public access for anyone hitting the
+			// bare URL (matches pre-auth behavior).
+			const wantsProprietary = url.searchParams.has("proprietary");
+			if (!wantsProprietary) {
+				return authContext.run(ANON_CONTEXT, () => fetcher(req, ...args));
+			}
 
-	async function buildAuthContext(
-		req: Request,
-		url: URL,
-	): Promise<AuthContext> {
-		if (!auth || !db) {
-			return {
-				email: "",
-				orgId: "",
-				isAnonymous: true,
-				loadCredentials: async () => ({}),
+			// /api/mcp?proprietary: explicit opt-in for proprietary tools.
+			// Requires an authenticated (non-anonymous) session — otherwise
+			// return 401 with WWW-Authenticate so the MCP client discovers
+			// our OAuth server metadata and runs the PKCE flow.
+			if (!auth || !db) {
+				return unauthorizedForProprietary(
+					req,
+					"proprietary access requires auth to be configured",
+				);
+			}
+
+			const session = await auth.api
+				.getSession({ headers: req.headers })
+				.catch(() => null);
+			const user = session?.user as
+				| { email?: string; isAnonymous?: boolean }
+				| undefined;
+			const isAuthed = Boolean(session && user && !user.isAnonymous);
+
+			if (!isAuthed || !user?.email) {
+				return unauthorizedForProprietary(
+					req,
+					"sign in to access proprietary data sources",
+				);
+			}
+
+			const orgId = (await resolveOrg(db, user.email)) ?? "";
+			const ctx: AuthContext = {
+				email: user.email,
+				orgId,
+				isAnonymous: false,
+				loadCredentials: orgId
+					? () => loadOrgCredentials(db, orgId)
+					: async () => ({}),
 			};
-		}
-
-		const session = await auth.api
-			.getSession({ headers: req.headers })
-			.catch(() => null);
-		const user = session?.user as
-			| { email?: string; isAnonymous?: boolean }
-			| undefined;
-		const isAnonymous =
-			url.searchParams.has("anon") || !session || Boolean(user?.isAnonymous);
-
-		if (isAnonymous || !user?.email) {
-			return {
-				email: "",
-				orgId: "",
-				isAnonymous: true,
-				loadCredentials: async () => ({}),
-			};
-		}
-
-		const orgId = (await resolveOrg(db, user.email)) ?? "";
-		return {
-			email: user.email,
-			orgId,
-			isAnonymous: false,
-			loadCredentials: orgId
-				? () => loadOrgCredentials(db, orgId)
-				: async () => ({}),
+			return authContext.run(ctx, () => fetcher(req, ...args));
 		};
 	}
 
@@ -213,7 +240,13 @@ export function createApp(config: AppConfig = {}) {
 			if (url.pathname === "/api/mcp" || url.pathname.startsWith("/api/mcp/")) {
 				url.pathname = url.pathname.slice(4);
 				const rewrittenReq = new Request(url.toString(), req);
-				return fetcher(rewrittenReq, ...args);
+				// Route to the runtime whose tools/list matches what this
+				// client asked for. withAuth has already gated access, so by
+				// the time we get here any ?proprietary request is authed.
+				const chosen: Fetcher = url.searchParams.has("proprietary")
+					? fullRuntime.fetch
+					: fetcher;
+				return chosen(rewrittenReq, ...args);
 			}
 
 			return fetcher(req, ...args);
@@ -221,7 +254,7 @@ export function createApp(config: AppConfig = {}) {
 	}
 
 	return {
-		fetch: withLogging(withAuth(withMcpApiRoute(runtime.fetch))),
+		fetch: withLogging(withAuth(withMcpApiRoute(publicRuntime.fetch))),
 		auth,
 	};
 }
