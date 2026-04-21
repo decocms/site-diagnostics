@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { withRuntime } from "@decocms/runtime";
 import { type Auth, createAuth } from "../src/auth/auth.ts";
 import type { AuthDB } from "../src/auth/db.ts";
-import { loadOrgCredentials, resolveOrg } from "../src/auth/resolve-org.ts";
+import { resolveOrg } from "../src/auth/resolve-org.ts";
 import { getScreenshot } from "./lib/storage.ts";
 import { prompts } from "./prompts/index.ts";
 import { createDiagnoseAppResource } from "./resources/diagnose.ts";
@@ -144,11 +144,6 @@ export function createApp(config: AppConfig = {}) {
 					if (!isAnon && user?.email) {
 						email = user.email;
 						orgId = (await resolveOrg(db, user.email)) ?? "";
-						if (orgId) {
-							// Warm the creds so downstream tool handlers can pull them
-							// without re-hitting the DB. Errors shouldn't block auth.
-							await loadOrgCredentials(db, orgId).catch(() => ({}));
-						}
 					}
 				}
 

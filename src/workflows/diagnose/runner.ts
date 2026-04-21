@@ -77,18 +77,25 @@ const STEP_TTLS: Record<string, number> = {
 	sourceRepo: 24 * 60 * 60 * 1000,
 };
 
-function cacheKey(domain: string, step: string): string {
-	return `${domain}:${step}`;
+function cacheKey(domain: string, step: string, scope?: string): string {
+	return scope ? `${domain}:${step}:${scope}` : `${domain}:${step}`;
 }
 
+/**
+ * `scope` isolates cache entries that depend on per-org credentials
+ * (orgId for proprietary sources). Omit for public steps whose output
+ * is the same regardless of who asked — cache reuse across orgs is a
+ * feature there, a cross-tenant leak for proprietary sources.
+ */
 async function cachedRun<T>(
 	cache: KVStore,
 	step: string,
 	url: string,
 	fn: () => Promise<T>,
+	scope?: string,
 ): Promise<T> {
 	const domain = new URL(url).hostname;
-	const key = cacheKey(domain, step);
+	const key = cacheKey(domain, step, scope);
 	const cached = await cache.get<T>(key);
 	if (cached !== null) return cached;
 	const result = await fn();
@@ -138,7 +145,7 @@ export async function runPublicPipeline(
 	cache: KVStore,
 	onProgress?: ProgressCallback,
 ): Promise<PipelineResult> {
-	const { url, sources = {} } = config;
+	const { url, orgId, sources = {} } = config;
 
 	// Step 1: Discover
 	onProgress?.({ step: "discover", status: "running" });
@@ -171,7 +178,7 @@ export async function runPublicPipeline(
 			optionalSource(
 				sources.cdn,
 				"sourceCdn",
-				(c) => cachedRun(cache, "sourceCdn", url, () => sourceCdn(c)),
+				(c) => cachedRun(cache, "sourceCdn", url, () => sourceCdn(c), orgId),
 				onProgress,
 			),
 			optionalSource(
@@ -184,13 +191,19 @@ export async function runPublicPipeline(
 				sources.bigquery,
 				"sourceBigQuery",
 				(c) =>
-					cachedRun(cache, "sourceBigQuery", url, () => sourceBigQuery(c, url)),
+					cachedRun(
+						cache,
+						"sourceBigQuery",
+						url,
+						() => sourceBigQuery(c, url),
+						orgId,
+					),
 				onProgress,
 			),
 			optionalSource(
 				sources.repo,
 				"sourceRepo",
-				(c) => cachedRun(cache, "sourceRepo", url, () => sourceRepo(c)),
+				(c) => cachedRun(cache, "sourceRepo", url, () => sourceRepo(c), orgId),
 				onProgress,
 			),
 		]);
