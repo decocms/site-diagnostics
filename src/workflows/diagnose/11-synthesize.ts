@@ -5,13 +5,9 @@ import { PERF_ANALYST_SYSTEM } from "../../prompts/perf-analyst.ts";
 import { SEO_ANALYST_SYSTEM } from "../../prompts/seo-analyst.ts";
 import { SYNTHESIZER_SYSTEM } from "../../prompts/synthesizer.ts";
 import type {
-	AnalyticsData,
-	CdnData,
 	ContentData,
 	DiscoveryResult,
-	HyperDxData,
 	PerfData,
-	RepoData,
 	ResearchData,
 	SampleSet,
 	SeoData,
@@ -64,10 +60,6 @@ export interface DataBundle {
 	seo: SeoData;
 	content: ContentData;
 	research: ResearchData;
-	cdn?: CdnData | null;
-	hyperdx?: HyperDxData | null;
-	bigquery?: AnalyticsData | null;
-	repo?: RepoData | null;
 }
 
 // ── Specialist Calls ─────────────────────────────────────
@@ -80,35 +72,24 @@ async function runSpecialist(
 	return completeJSON<SpecialistSection>(prompt, { system });
 }
 
-async function runPerfAnalyst(
-	perf: PerfData,
-	cdn: CdnData | null | undefined,
-	hyperdx: HyperDxData | null | undefined,
-	repo: RepoData | null | undefined,
-): Promise<SpecialistSection> {
-	return runSpecialist(PERF_ANALYST_SYSTEM, { perf, cdn, hyperdx, repo });
+async function runPerfAnalyst(perf: PerfData): Promise<SpecialistSection> {
+	return runSpecialist(PERF_ANALYST_SYSTEM, perf);
 }
 
-async function runSeoAnalyst(
-	seo: SeoData,
-	repo: RepoData | null | undefined,
-): Promise<SpecialistSection> {
-	return runSpecialist(SEO_ANALYST_SYSTEM, { seo, repo });
+async function runSeoAnalyst(seo: SeoData): Promise<SpecialistSection> {
+	return runSpecialist(SEO_ANALYST_SYSTEM, seo);
 }
 
 async function runContentAnalyst(
 	content: ContentData,
-	repo: RepoData | null | undefined,
 ): Promise<SpecialistSection> {
-	return runSpecialist(CONTENT_ANALYST_SYSTEM, { content, repo });
+	return runSpecialist(CONTENT_ANALYST_SYSTEM, content);
 }
 
 async function runBusinessAnalyst(
 	research: ResearchData,
-	bigquery: AnalyticsData | null | undefined,
-	repo: RepoData | null | undefined,
 ): Promise<SpecialistSection> {
-	const prompt = `Analyze the following data and produce your assessment as JSON.\n\n${JSON.stringify({ research, bigquery, repo }, null, 2)}`;
+	const prompt = `Analyze the following data and produce your assessment as JSON.\n\n${JSON.stringify(research, null, 2)}`;
 	// Business analyst returns no scores, just markdown + findings
 	const result = await completeJSON<{ markdown: string; findings: Finding[] }>(
 		prompt,
@@ -171,25 +152,15 @@ export async function synthesize(
 	bundle: DataBundle,
 	lang: string,
 ): Promise<DiagnosticReport> {
-	const {
-		discovery,
-		perf,
-		seo,
-		content,
-		research,
-		cdn,
-		hyperdx,
-		bigquery,
-		repo,
-	} = bundle;
+	const { discovery, perf, seo, content, research } = bundle;
 
 	// Phase A: Parallel specialist agents
 	const [perfSection, seoSection, contentSection, businessSection] =
 		await Promise.all([
-			runPerfAnalyst(perf, cdn, hyperdx, repo),
-			runSeoAnalyst(seo, repo),
-			runContentAnalyst(content, repo),
-			runBusinessAnalyst(research, bigquery, repo),
+			runPerfAnalyst(perf),
+			runSeoAnalyst(seo),
+			runContentAnalyst(content),
+			runBusinessAnalyst(research),
 		]);
 
 	// Calculate health score from specialist scores
