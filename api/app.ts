@@ -113,42 +113,47 @@ export function createApp(config: AppConfig = {}) {
 
 	function withAuth(fetcher: Fetcher): Fetcher {
 		return async (req: Request, ...args) => {
-			if (!auth || !db) return fetcher(req, ...args);
-
 			const url = new URL(req.url);
 
 			// Mount BetterAuth handler at /api/auth/*
-			if (url.pathname.startsWith("/api/auth/")) {
+			if (auth && url.pathname.startsWith("/api/auth/")) {
 				return auth.handler(req);
 			}
 
-			// Enrich /api/mcp requests with user context headers. Anonymous
-			// access is allowed via ?anon or when no session cookie is present —
-			// those requests get x-is-anonymous=true and no org context.
+			// Force-scrub then re-set the three trust-boundary headers on every
+			// /api/mcp request so clients can't forge them. When auth isn't
+			// configured (e.g. Workers with no D1 binding), we still scrub and
+			// mark the request anonymous rather than fall through unguarded.
 			if (url.pathname.startsWith("/api/mcp")) {
-				const session = await auth.api
-					.getSession({ headers: req.headers })
-					.catch(() => null);
-				const user = session?.user as
-					| { email?: string; isAnonymous?: boolean }
-					| undefined;
-				const isAnon =
-					url.searchParams.has("anon") ||
-					!session ||
-					Boolean(user?.isAnonymous);
-
+				let email = "";
 				let orgId = "";
-				if (!isAnon && user?.email) {
-					orgId = (await resolveOrg(db, user.email)) ?? "";
-					if (orgId) {
-						// Warm the creds so downstream tool handlers can pull them
-						// without re-hitting the DB. Errors shouldn't block auth.
-						await loadOrgCredentials(db, orgId).catch(() => ({}));
+				let isAnon = true;
+
+				if (auth && db) {
+					const session = await auth.api
+						.getSession({ headers: req.headers })
+						.catch(() => null);
+					const user = session?.user as
+						| { email?: string; isAnonymous?: boolean }
+						| undefined;
+					isAnon =
+						url.searchParams.has("anon") ||
+						!session ||
+						Boolean(user?.isAnonymous);
+
+					if (!isAnon && user?.email) {
+						email = user.email;
+						orgId = (await resolveOrg(db, user.email)) ?? "";
+						if (orgId) {
+							// Warm the creds so downstream tool handlers can pull them
+							// without re-hitting the DB. Errors shouldn't block auth.
+							await loadOrgCredentials(db, orgId).catch(() => ({}));
+						}
 					}
 				}
 
 				const headers = new Headers(req.headers);
-				headers.set("x-user-email", isAnon ? "" : (user?.email ?? ""));
+				headers.set("x-user-email", email);
 				headers.set("x-org-id", orgId);
 				headers.set("x-is-anonymous", String(isAnon));
 				const enriched = new Request(req, { headers });
