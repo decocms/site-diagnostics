@@ -4,6 +4,7 @@ export {
 	buildAuthOptions,
 	createAuth,
 } from "./auth.ts";
+export { type AuthContext, authContext } from "./context.ts";
 export {
 	type AuthDB,
 	createBunSqliteAuthDB,

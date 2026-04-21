@@ -2,8 +2,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { withRuntime } from "@decocms/runtime";
 import { type Auth, createAuth } from "../src/auth/auth.ts";
+import { type AuthContext, authContext } from "../src/auth/context.ts";
 import type { AuthDB } from "../src/auth/db.ts";
-import { resolveOrg } from "../src/auth/resolve-org.ts";
+import { loadOrgCredentials, resolveOrg } from "../src/auth/resolve-org.ts";
 import { getScreenshot } from "./lib/storage.ts";
 import { prompts } from "./prompts/index.ts";
 import { createDiagnoseAppResource } from "./resources/diagnose.ts";
@@ -120,42 +121,58 @@ export function createApp(config: AppConfig = {}) {
 				return auth.handler(req);
 			}
 
-			// Force-scrub then re-set the three trust-boundary headers on every
-			// /api/mcp request so clients can't forge them. When auth isn't
-			// configured (e.g. Workers with no D1 binding), we still scrub and
-			// mark the request anonymous rather than fall through unguarded.
+			// Bind the per-request auth context so downstream handlers can read
+			// it via `authContext.get()`. When auth isn't configured (e.g.
+			// Workers without a D1 binding) we still bind a default-anonymous
+			// context so there's no unguarded fallthrough.
 			if (url.pathname.startsWith("/api/mcp")) {
-				let email = "";
-				let orgId = "";
-				let isAnon = true;
-
-				if (auth && db) {
-					const session = await auth.api
-						.getSession({ headers: req.headers })
-						.catch(() => null);
-					const user = session?.user as
-						| { email?: string; isAnonymous?: boolean }
-						| undefined;
-					isAnon =
-						url.searchParams.has("anon") ||
-						!session ||
-						Boolean(user?.isAnonymous);
-
-					if (!isAnon && user?.email) {
-						email = user.email;
-						orgId = (await resolveOrg(db, user.email)) ?? "";
-					}
-				}
-
-				const headers = new Headers(req.headers);
-				headers.set("x-user-email", email);
-				headers.set("x-org-id", orgId);
-				headers.set("x-is-anonymous", String(isAnon));
-				const enriched = new Request(req, { headers });
-				return fetcher(enriched, ...args);
+				const ctx = await buildAuthContext(req, url);
+				return authContext.run(ctx, () => fetcher(req, ...args));
 			}
 
 			return fetcher(req, ...args);
+		};
+	}
+
+	async function buildAuthContext(
+		req: Request,
+		url: URL,
+	): Promise<AuthContext> {
+		if (!auth || !db) {
+			return {
+				email: "",
+				orgId: "",
+				isAnonymous: true,
+				loadCredentials: async () => ({}),
+			};
+		}
+
+		const session = await auth.api
+			.getSession({ headers: req.headers })
+			.catch(() => null);
+		const user = session?.user as
+			| { email?: string; isAnonymous?: boolean }
+			| undefined;
+		const isAnonymous =
+			url.searchParams.has("anon") || !session || Boolean(user?.isAnonymous);
+
+		if (isAnonymous || !user?.email) {
+			return {
+				email: "",
+				orgId: "",
+				isAnonymous: true,
+				loadCredentials: async () => ({}),
+			};
+		}
+
+		const orgId = (await resolveOrg(db, user.email)) ?? "";
+		return {
+			email: user.email,
+			orgId,
+			isAnonymous: false,
+			loadCredentials: orgId
+				? () => loadOrgCredentials(db, orgId)
+				: async () => ({}),
 		};
 	}
 
