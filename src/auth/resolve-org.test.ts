@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, it } from "bun:test";
 import { createBunSqliteAuthDB } from "./db.ts";
-import { loadOrgCredentials, resolveOrg } from "./resolve-org.ts";
+import { resolveOrg } from "./resolve-org.ts";
 import { ORG_SCHEMA_SQL } from "./schema.ts";
 
 async function freshDB() {
@@ -12,6 +12,16 @@ async function freshDB() {
 	return db;
 }
 
+// Mapping tables reference org_credentials(org_id). Inserting cipher+iv stubs
+// since the encrypted schema requires NOT NULL BLOBs.
+async function seedOrg(db: Awaited<ReturnType<typeof freshDB>>, orgId: string) {
+	await db.run(
+		`INSERT INTO org_credentials (org_id, creds_cipher, creds_iv, key_version)
+		 VALUES (?, ?, ?, ?)`,
+		[orgId, new Uint8Array([0]), new Uint8Array([0]), 1],
+	);
+}
+
 describe("resolveOrg", () => {
 	it("returns null for email with no matching mapping", async () => {
 		const db = await freshDB();
@@ -20,14 +30,8 @@ describe("resolveOrg", () => {
 
 	it("matches individual email before domain", async () => {
 		const db = await freshDB();
-		await db.run("INSERT INTO org_credentials (org_id, creds) VALUES (?, ?)", [
-			"org-indiv",
-			"{}",
-		]);
-		await db.run("INSERT INTO org_credentials (org_id, creds) VALUES (?, ?)", [
-			"org-domain",
-			"{}",
-		]);
+		await seedOrg(db, "org-indiv");
+		await seedOrg(db, "org-domain");
 		await db.run(
 			"INSERT INTO email_domain_mapping (domain, org_id) VALUES (?, ?)",
 			["example.com", "org-domain"],
@@ -43,10 +47,7 @@ describe("resolveOrg", () => {
 
 	it("normalizes email casing and whitespace", async () => {
 		const db = await freshDB();
-		await db.run("INSERT INTO org_credentials (org_id, creds) VALUES (?, ?)", [
-			"org-a",
-			"{}",
-		]);
+		await seedOrg(db, "org-a");
 		await db.run(
 			"INSERT INTO email_domain_mapping (domain, org_id) VALUES (?, ?)",
 			["acme.com", "org-a"],
@@ -59,35 +60,5 @@ describe("resolveOrg", () => {
 		const db = await freshDB();
 		expect(await resolveOrg(db, "not-an-email")).toBeNull();
 		expect(await resolveOrg(db, "")).toBeNull();
-	});
-});
-
-describe("loadOrgCredentials", () => {
-	it("returns empty object when org has no row", async () => {
-		const db = await freshDB();
-		expect(await loadOrgCredentials(db, "missing")).toEqual({});
-	});
-
-	it("parses stored JSON creds", async () => {
-		const db = await freshDB();
-		const creds = {
-			cdn: { endpoint: "https://cdn.example/api", token: "secret" },
-			repo: { owner: "acme", repo: "site", token: "ghp_x" },
-		};
-		await db.run("INSERT INTO org_credentials (org_id, creds) VALUES (?, ?)", [
-			"org-a",
-			JSON.stringify(creds),
-		]);
-
-		expect(await loadOrgCredentials(db, "org-a")).toEqual(creds);
-	});
-
-	it("returns empty object on malformed JSON", async () => {
-		const db = await freshDB();
-		await db.run("INSERT INTO org_credentials (org_id, creds) VALUES (?, ?)", [
-			"org-a",
-			"{not valid json",
-		]);
-		expect(await loadOrgCredentials(db, "org-a")).toEqual({});
 	});
 });

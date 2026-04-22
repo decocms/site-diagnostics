@@ -226,10 +226,12 @@ if (url.pathname.startsWith("/api/pipeline/status/")) {
 -- BetterAuth managed tables (auto-migrated)
 -- user, session, account, verification
 
--- Org credentials: one row per org, JSON blob for all API keys
+-- Org credentials: one row per org, ENCRYPTED JSON blob
 CREATE TABLE org_credentials (
-  org_id    TEXT PRIMARY KEY,
-  creds     TEXT NOT NULL  -- JSON: { cdn, hyperdx, bigquery, repo }
+  org_id        TEXT PRIMARY KEY,
+  creds_cipher  BLOB NOT NULL,  -- AES-256-GCM ciphertext of JSON: { cdn, hyperdx, bigquery, repo }
+  creds_iv      BLOB NOT NULL,  -- 12-byte IV per row (random)
+  key_version   INTEGER NOT NULL DEFAULT 1  -- for future key rotation
 );
 
 -- Map an entire email domain to an org
@@ -253,9 +255,56 @@ CREATE TABLE individual_email_mapping (
 resolveOrg(email):
   1. Check individual_email_mapping for exact email
   2. If not found, extract domain from email, check email_domain_mapping
-  3. If found → load org_credentials by org_id → return creds
+  3. If found → return org_id (creds are loaded separately via loadOrgCredentials, which decrypts)
   4. If not found → user is authenticated but has no org → no proprietary sources
 ```
+
+### Credentials encryption
+
+Credentials contain GitHub PATs, Google service account JSON, HyperDx API keys, and CDN data-lake tokens. Storing them as plaintext in D1 makes a single DB breach a total compromise of every connected org's infrastructure. They are encrypted at rest using **AES-256-GCM** with a key held in a wrangler secret.
+
+- **Key material**: `CREDS_ENCRYPTION_KEY` — 32 random bytes, base64-encoded, stored as a wrangler secret (and in `.env` for local dev). Never committed, never logged.
+- **Per-row IV**: a fresh random 12-byte IV is generated on every write and stored alongside the ciphertext. Never reused within a key version.
+- **Algorithm**: AES-GCM via Web Crypto (`crypto.subtle`). Available in both Workers and Bun.
+- **Key rotation**: `key_version` column allows rolling forward. On rotation, a background job re-encrypts all rows with the new key and bumps the version.
+
+```typescript
+// src/auth/encryption.ts
+export async function encryptCreds(
+  plaintext: OrgCredentials,
+  keyB64: string,
+): Promise<{ cipher: Uint8Array; iv: Uint8Array }> {
+  const key = await importKey(keyB64);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const data = new TextEncoder().encode(JSON.stringify(plaintext));
+  const cipher = new Uint8Array(
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data),
+  );
+  return { cipher, iv };
+}
+
+export async function decryptCreds(
+  cipher: Uint8Array,
+  iv: Uint8Array,
+  keyB64: string,
+): Promise<OrgCredentials> {
+  const key = await importKey(keyB64);
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, cipher);
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+
+async function importKey(keyB64: string): Promise<CryptoKey> {
+  const raw = Uint8Array.from(atob(keyB64), c => c.charCodeAt(0));
+  return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]);
+}
+```
+
+`loadOrgCredentials(orgId)` reads the row, calls `decryptCreds`, and returns the plaintext object only in memory. Writes go through `saveOrgCredentials(orgId, creds)` which encrypts before the D1 insert. Nothing else in the codebase touches `creds_cipher` directly.
+
+**Operational rules:**
+- `CREDS_ENCRYPTION_KEY` is set once per environment and is NOT derivable from any other secret. Losing it means all stored credentials are unrecoverable — that's the point. Back up the key out-of-band (1Password).
+- No logging of decrypted creds anywhere. Decryption happens at the edge of the auth layer; everything downstream sees a typed `OrgCredentials` object.
+- Local dev uses the same scheme against a dev key checked into `.env.example` (placeholder only — real keys are generated per developer).
 
 ### Credentials JSON shape
 
@@ -385,25 +434,37 @@ Implementations:
 
 ### Cache key format
 
-`{domain}:{stepName}:{configHash}` — domain is a readable prefix for easy purging.
+`{domain}:{scope}:{stepName}:{configHash}` — domain prefix for easy purging, scope segment isolates proprietary data per org.
+
+**Scope rules:**
+- `public` — for steps 1-6 (`discover`, `analyzePerf`, `analyzeSeo`, `analyzeContent`, `research`). Same URL always hits the same entry regardless of caller.
+- `org:{orgId}` — for steps 7-10 (`sourceCdn`, `sourceHyperDx`, `sourceBigQuery`, `sourceRepo`). Results are derived from that org's credentials and MUST NOT be reused across orgs.
 
 ```
-www.example.com:discover:a1b2c3
-www.example.com:analyzePerf:a1b2c3
-www.example.com:sourceBigQuery:d4e5f6
+www.example.com:public:discover:a1b2c3
+www.example.com:public:analyzePerf:a1b2c3
+www.example.com:org:abc123:sourceCdn:d4e5f6
+www.example.com:org:abc123:sourceBigQuery:d4e5f6
 ```
 
 This format enables:
-- **Purge single key**: `delete("www.example.com:discover:a1b2c3")`
-- **Purge all for a domain**: `list("www.example.com:")` → delete each
+- **Purge single key**: `delete("www.example.com:public:discover:a1b2c3")`
+- **Purge all for a domain (all orgs)**: `list("www.example.com:")` → delete each
+- **Purge one org's data for a domain**: `list("www.example.com:org:abc123:")` → delete each
+
+**Security note:** the scope segment is non-negotiable. A step function that sources proprietary data but is cached under a `public` scope is a data leak — two orgs diagnosing the same domain would read each other's CDN/analytics/repo results.
 
 ### Usage in steps
 
 ```typescript
-// Each step function is wrapped with caching at the orchestration layer,
-// NOT inside the function itself. The function stays pure.
-const discovery = await cachedRun(cache, "discover", domain, url, () => discover(url));
+// Public step — scope = "public", no org needed
+const discovery = await cachedRun(cache, "discover", "public", domain, () => discover(url));
+
+// Proprietary step — scope = `org:${orgId}`, enforced by the runner
+const cdn = await cachedRun(cache, "sourceCdn", `org:${orgId}`, domain, () => sourceCdn(creds.cdn));
 ```
+
+`cachedRun` signature takes `scope` as a required parameter so forgetting it is a type error, not a silent leak.
 
 ### Admin purge endpoint
 
@@ -790,32 +851,36 @@ export async function runDiagnosePipeline(
   config: PipelineConfig,
   cache: KVStore,
 ): Promise<PipelineResult> {
-  const { url, sources } = config;
+  const { url, orgId, sources } = config;
   const lang = url.includes(".br") ? "pt-BR" : "en";
+  const domain = canonicalDomain(url);
+  const orgScope = `org:${orgId}`;
 
-  const getOrRun = <T>(step: string, fn: () => Promise<T>) =>
-    cachedRun(cache, step, url, fn);
+  const cachedPublic = <T>(step: string, fn: () => Promise<T>) =>
+    cachedRun(cache, step, "public", domain, fn);
+  const cachedOrg = <T>(step: string, fn: () => Promise<T>) =>
+    cachedRun(cache, step, orgScope, domain, fn);
 
   // Step 1: Discover
-  const discovery = await getOrRun("discover", () => discover(url));
+  const discovery = await cachedPublic("discover", () => discover(url));
 
   // Step 2: Select samples (pure, no cache)
   const samples = selectSamples(discovery);
 
-  // Steps 3-6: Parallel
+  // Steps 3-6: Parallel — public scope
   const [perf, seo, content, research] = await Promise.all([
-    getOrRun("analyzePerf", () => analyzePerformance(samples)),
-    getOrRun("analyzeSeo", () => analyzeSeo(url, samples)),
-    getOrRun("analyzeContent", () => analyzeContent(samples, discovery)),
-    getOrRun("research", () => research(url, discovery)),
+    cachedPublic("analyzePerf", () => analyzePerformance(samples)),
+    cachedPublic("analyzeSeo", () => analyzeSeo(url, samples)),
+    cachedPublic("analyzeContent", () => analyzeContent(samples, discovery)),
+    cachedPublic("research", () => research(url, discovery)),
   ]);
 
-  // Steps 7-10: Proprietary sources (parallel, conditional)
+  // Steps 7-10: Proprietary sources (parallel, conditional) — org-scoped cache
   const [cdn, hyperdx, bigquery, repo] = await Promise.all([
-    sources.cdn      ? cachedRun(cache, "sourceCdn", url, () => sourceCdn(sources.cdn!))                : null,
-    sources.hyperdx  ? sourceHyperDx(sources.hyperdx)                                                    : null,
-    sources.bigquery ? cachedRun(cache, "sourceBigQuery", url, () => sourceBigQuery(sources.bigquery!, url)) : null,
-    sources.repo     ? cachedRun(cache, "sourceRepo", url, () => sourceRepo(sources.repo!))              : null,
+    sources.cdn      ? cachedOrg("sourceCdn", () => sourceCdn(sources.cdn!))                  : null,
+    sources.hyperdx  ? sourceHyperDx(sources.hyperdx)                                          : null, // no cache (always fresh)
+    sources.bigquery ? cachedOrg("sourceBigQuery", () => sourceBigQuery(sources.bigquery!, url)) : null,
+    sources.repo     ? cachedOrg("sourceRepo", () => sourceRepo(sources.repo!))                : null,
   ]);
 
   const bundle: DataBundle = {
@@ -953,6 +1018,8 @@ src/cache/cloudflare-kv.ts
 src/auth/auth.ts
 src/auth/resolve-org.ts
 src/auth/db.ts
+src/auth/encryption.ts
+src/auth/credentials.ts           # load/saveOrgCredentials — the only code that decrypts
 src/integrations/hyperdx.ts
 src/integrations/bigquery.ts
 src/integrations/github.ts
@@ -1156,20 +1223,21 @@ Until then: keep a running list of cases where you wish you had a sub-agent, and
 
 ### Phase 4: Auth + proprietary sources
 17. Set up BetterAuth with OTP + anonymous
-18. Create DB schema + migrations
-19. Implement org resolution (email → org_id → creds)
-20. Implement `07-source-cdn.ts`
-21. Implement `08-source-hyperdx.ts`
-22. Implement `09-source-bigquery.ts`
-23. Implement `10-source-repo.ts`
-24. Wire auth into HTTP server in front of MCP runtime
+18. Create DB schema + migrations (including encrypted `org_credentials`)
+19. Implement `src/auth/encryption.ts` + `src/auth/credentials.ts` (encrypt on write, decrypt on read)
+20. Implement org resolution (email → org_id → loadOrgCredentials → decrypted creds)
+21. Implement `07-source-cdn.ts`
+22. Implement `08-source-hyperdx.ts`
+23. Implement `09-source-bigquery.ts`
+24. Implement `10-source-repo.ts`
+25. Wire auth into HTTP server in front of MCP runtime
 
 ### Phase 5: Production
-25. `cache/cloudflare-kv.ts` implementation
-26. D1 binding for prod database
-27. Pipeline status endpoint (`/api/pipeline/status/:id`)
-28. UI updates for login screen + source indicators in report
-29. Deploy and test on Workers
+26. `cache/cloudflare-kv.ts` implementation
+27. D1 binding for prod database
+28. Pipeline status endpoint (`/api/pipeline/status/:id`)
+29. UI updates for login screen + source indicators in report
+30. Deploy and test on Workers
 
 ---
 
@@ -1186,6 +1254,7 @@ Until then: keep a running list of cases where you wish you had a sub-agent, and
 | `S3_ACCESS_KEY_ID` | R2 access key | `...` |
 | `S3_SECRET_ACCESS_KEY` | R2 secret key | `...` |
 | `ADMIN_SECRET` | Secret for `/purge` endpoint | any random string |
+| `CREDS_ENCRYPTION_KEY` | 32 random bytes, base64-encoded. Used for AES-256-GCM encryption of `org_credentials.creds_cipher`. Set once per env; back up out-of-band. | `openssl rand -base64 32` |
 
 ### Optional (all environments)
 

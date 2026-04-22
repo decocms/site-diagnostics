@@ -1,35 +1,37 @@
 import type { KVStore } from "./interface.ts";
 
-export const STEP_TTLS: Record<string, number> = {
-	discover: 24 * 60 * 60 * 1000,
-	analyzePerf: 24 * 60 * 60 * 1000,
-	analyzeSeo: 24 * 60 * 60 * 1000,
-	analyzeContent: 24 * 60 * 60 * 1000,
-	research: 7 * 24 * 60 * 60 * 1000,
-};
-
-function cacheKey(domain: string, step: string): string {
-	return `${domain}:${step}`;
+export interface CachedRunArgs<T> {
+	/** Optional KV store. When undefined, degrades to a direct call. */
+	cache: KVStore | undefined;
+	/**
+	 * Cache key segments. Built via a `KEYS.xxx()` factory from
+	 * `src/cache/keys.ts` — do not hand-build at call sites.
+	 * Joined with `:` to produce the final key.
+	 */
+	key: string[];
+	/** Optional TTL in ms. When undefined, entry never expires. */
+	ttlMs?: number;
+	/** The pure step function to run on cache miss. */
+	fn: () => Promise<T>;
 }
 
 /**
- * Cache wrapper for pure pipeline step functions. Keys are scoped per
- * domain+step so a repeat call on the same domain is free. When `cache`
- * is undefined the wrapper degrades to a direct call (no caching).
+ * Cache wrapper for pure pipeline step functions. The `key` array is spread
+ * from `KEYS.xxx({ url [, orgId] })` — see `src/cache/keys.ts` for the
+ * registered steps. Centralizing key construction there prevents typo'd
+ * keys and keeps the format change-blast-radius to one file.
  */
-export async function cachedRun<T>(
-	cache: KVStore | undefined,
-	step: string,
-	url: string,
-	fn: () => Promise<T>,
-): Promise<T> {
+export async function cachedRun<T>({
+	cache,
+	key,
+	ttlMs,
+	fn,
+}: CachedRunArgs<T>): Promise<T> {
 	if (!cache) return fn();
-	const domain = new URL(url).hostname;
-	const key = cacheKey(domain, step);
-	const cached = await cache.get<T>(key);
+	const joined = key.join(":");
+	const cached = await cache.get<T>(joined);
 	if (cached !== null) return cached;
 	const result = await fn();
-	const ttl = STEP_TTLS[step];
-	await cache.set(key, result, ttl);
+	await cache.set(joined, result, ttlMs);
 	return result;
 }
