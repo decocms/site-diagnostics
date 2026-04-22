@@ -19,6 +19,7 @@ export const publishDiagnosticInputSchema = z.object({
 
 export const publishDiagnosticOutputSchema = z.object({
 	token: z.string(),
+	url: z.string(),
 	expiresAt: z.string().nullable(),
 	createdAt: z.string(),
 });
@@ -38,9 +39,9 @@ export const publishDiagnosticTool = (_env: Env) =>
 	createTool({
 		id: "publish_diagnostic",
 		description:
-			"Create a public share link for a saved diagnostic. Returns an opaque token; " +
-			"the link URL is `{origin}/d/{token}`. Anyone with the link can view the report " +
-			"until it expires or is revoked with `unpublish_diagnostic`.",
+			"Create a public share link for a saved diagnostic. Returns the full `url` " +
+			"and the opaque `token`. Anyone with the link can view the report until it " +
+			"expires or is revoked with `unpublish_diagnostic`.",
 		inputSchema: publishDiagnosticInputSchema,
 		outputSchema: publishDiagnosticOutputSchema,
 		annotations: {
@@ -52,6 +53,9 @@ export const publishDiagnosticTool = (_env: Env) =>
 		execute: async ({ context, runtimeContext }) => {
 			const orgId =
 				runtimeContext?.env?.MESH_REQUEST_CONTEXT?.organizationId ?? "default";
+			const origin = runtimeContext?.req
+				? new URL(runtimeContext.req.url).origin
+				: "";
 
 			// Make sure the diagnostic exists in the caller's org before minting
 			// a token — otherwise we'd leak the ability to publish arbitrary IDs.
@@ -76,6 +80,11 @@ export const publishDiagnosticTool = (_env: Env) =>
 				expiresAt: expiresAt ?? undefined,
 			});
 
-			return { token, expiresAt, createdAt };
+			return {
+				token,
+				url: `${origin}/d/${token}`,
+				expiresAt,
+				createdAt,
+			};
 		},
 	});

@@ -226,7 +226,7 @@ export default function DiagnosticsPage() {
 	);
 
 	const publishDiagnostic = useCallback(
-		async (id: string): Promise<{ token: string } | null> => {
+		async (id: string): Promise<{ url: string } | null> => {
 			if (!app) return null;
 			const result = await app.callServerTool({
 				name: "publish_diagnostic",
@@ -236,8 +236,8 @@ export default function DiagnosticsPage() {
 				(c: { type: string }) => c.type === "text",
 			);
 			if (text && "text" in text) {
-				const data = JSON.parse(text.text) as { token: string };
-				return { token: data.token };
+				const data = JSON.parse(text.text) as { url: string };
+				return { url: data.url };
 			}
 			return null;
 		},
