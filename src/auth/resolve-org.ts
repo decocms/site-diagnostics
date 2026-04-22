@@ -1,4 +1,3 @@
-import type { OrgCredentials } from "../workflows/diagnose/types.ts";
 import type { AuthDB } from "./db.ts";
 
 /**
@@ -8,6 +7,10 @@ import type { AuthDB } from "./db.ts";
  *   1. Exact match in `individual_email_mapping`
  *   2. Domain match in `email_domain_mapping`
  *   3. null — authenticated user with no org, public pipeline only
+ *
+ * Credential loading lives in `credentials.ts` (the only module that
+ * decrypts). Callers that need creds call `loadOrgCredentials(db, orgId,
+ * key)` after resolving the org.
  */
 export async function resolveOrg(
 	db: AuthDB,
@@ -30,26 +33,4 @@ export async function resolveOrg(
 		[domain],
 	);
 	return byDomain?.org_id ?? null;
-}
-
-/**
- * Loads the credential bundle for an org. Returns an empty object if no row
- * exists — callers should treat that as "no proprietary sources available".
- */
-export async function loadOrgCredentials(
-	db: AuthDB,
-	orgId: string,
-): Promise<OrgCredentials> {
-	const row = await db.get<{ creds: string }>(
-		"SELECT creds FROM org_credentials WHERE org_id = ?",
-		[orgId],
-	);
-	if (!row) return {};
-
-	try {
-		return JSON.parse(row.creds) as OrgCredentials;
-	} catch {
-		console.warn(`[auth] malformed creds JSON for org_id=${orgId}`);
-		return {};
-	}
 }

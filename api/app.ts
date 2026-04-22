@@ -3,8 +3,9 @@ import { join } from "node:path";
 import { withRuntime } from "@decocms/runtime";
 import { type Auth, createAuth } from "../src/auth/auth.ts";
 import { type AuthContext, authContext } from "../src/auth/context.ts";
+import { loadOrgCredentials } from "../src/auth/credentials.ts";
 import type { AuthDB } from "../src/auth/db.ts";
-import { loadOrgCredentials, resolveOrg } from "../src/auth/resolve-org.ts";
+import { resolveOrg } from "../src/auth/resolve-org.ts";
 import type { KVStore } from "../src/cache/interface.ts";
 import { renderLoginPage } from "./lib/login-page.ts";
 import {
@@ -39,6 +40,12 @@ export interface AppConfig {
 	sendOTP?: (data: { email: string; otp: string }) => Promise<void>;
 	/** KV store for per-domain step caching. When omitted, step tools skip caching. */
 	cache?: KVStore;
+	/**
+	 * Base64-encoded 32-byte key used to decrypt org_credentials rows.
+	 * Required to serve proprietary tools. When omitted, /api/mcp?proprietary
+	 * returns 401 even for authenticated users — the server cannot read creds.
+	 */
+	credsEncryptionKey?: string;
 }
 
 const colors = {
@@ -69,8 +76,16 @@ function getMethodColor(method: string): string {
 }
 
 export function createApp(config: AppConfig = {}) {
-	const { clientHTML, db, authBaseURL, authSecret, loginPage, sendOTP, cache } =
-		config;
+	const {
+		clientHTML,
+		db,
+		authBaseURL,
+		authSecret,
+		loginPage,
+		sendOTP,
+		cache,
+		credsEncryptionKey,
+	} = config;
 
 	const getClientHTML = clientHTML
 		? () => Promise.resolve(clientHTML)
@@ -205,6 +220,16 @@ export function createApp(config: AppConfig = {}) {
 				);
 			}
 
+			// Without the encryption key we literally cannot decrypt creds.
+			// Fail closed rather than hand the request an empty bundle and
+			// pretend everything is fine.
+			if (!credsEncryptionKey) {
+				return unauthorizedForProprietary(
+					req,
+					"proprietary access requires CREDS_ENCRYPTION_KEY to be configured",
+				);
+			}
+
 			const session = await auth.api
 				.getSession({ headers: req.headers })
 				.catch(() => null);
@@ -226,7 +251,7 @@ export function createApp(config: AppConfig = {}) {
 				orgId,
 				isAnonymous: false,
 				loadCredentials: orgId
-					? () => loadOrgCredentials(db, orgId)
+					? () => loadOrgCredentials(db, orgId, credsEncryptionKey)
 					: async () => ({}),
 			};
 			return authContext.run(ctx, () => fetcher(req, ...args));

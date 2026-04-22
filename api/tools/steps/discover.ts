@@ -24,7 +24,7 @@ export const discoverToolFactory = (cache?: KVStore) => (_env: Env) =>
 		},
 		execute: async ({ context }) => {
 			const { url } = context;
-			const discovery = await cachedRun(cache, "discover", url, () =>
+			const discovery = await cachedRun(cache, "discover", "public", url, () =>
 				discover(url),
 			);
 			const samples = selectSamples(discovery);

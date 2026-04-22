@@ -37,6 +37,7 @@ export const analyzeContentToolFactory = (cache?: KVStore) => (_env: Env) =>
 			const result = await cachedRun(
 				cache,
 				"analyzeContent",
+				"public",
 				samples.homepage,
 				() => analyzeContent(samples, discovery, origin),
 			);

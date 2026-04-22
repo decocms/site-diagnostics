@@ -26,7 +26,7 @@ export const analyzeSeoToolFactory = (cache?: KVStore) => (_env: Env) =>
 		execute: async ({ context }) => {
 			const { url } = context;
 			const samples = context.samples as SampleSet;
-			const result = await cachedRun(cache, "analyzeSeo", url, () =>
+			const result = await cachedRun(cache, "analyzeSeo", "public", url, () =>
 				analyzeSeo(url, samples),
 			);
 			return result as unknown as Record<string, unknown>;

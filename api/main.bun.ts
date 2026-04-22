@@ -27,6 +27,7 @@ const app = createApp({
 		RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
 	}),
 	cache: new FileKVStore(process.env.KV_DIR ?? ".kv"),
+	credsEncryptionKey: process.env.CREDS_ENCRYPTION_KEY,
 });
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;

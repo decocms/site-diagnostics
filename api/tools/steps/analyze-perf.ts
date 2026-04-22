@@ -30,6 +30,7 @@ export const analyzePerfToolFactory = (cache?: KVStore) => (_env: Env) =>
 			const result = await cachedRun(
 				cache,
 				"analyzePerf",
+				"public",
 				samples.homepage,
 				() => analyzePerformance(samples, origin),
 			);

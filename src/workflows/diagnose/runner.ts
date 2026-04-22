@@ -67,7 +67,7 @@ export async function runPublicPipeline(
 
 	// Step 1: Discover
 	onProgress?.({ step: "discover", status: "running" });
-	const discovery = await cachedRun(cache, "discover", url, () =>
+	const discovery = await cachedRun(cache, "discover", "public", url, () =>
 		discover(url),
 	);
 	onProgress?.({
@@ -86,14 +86,16 @@ export async function runPublicPipeline(
 	onProgress?.({ step: "research", status: "running" });
 
 	const [perf, seo, content, researchData] = await Promise.all([
-		cachedRun(cache, "analyzePerf", url, () =>
+		cachedRun(cache, "analyzePerf", "public", url, () =>
 			analyzePerformance(samples, origin),
 		),
-		cachedRun(cache, "analyzeSeo", url, () => analyzeSeo(url, samples)),
-		cachedRun(cache, "analyzeContent", url, () =>
+		cachedRun(cache, "analyzeSeo", "public", url, () =>
+			analyzeSeo(url, samples),
+		),
+		cachedRun(cache, "analyzeContent", "public", url, () =>
 			analyzeContent(samples, discovery, origin),
 		),
-		cachedRun(cache, "research", url, () => research(url, discovery)),
+		cachedRun(cache, "research", "public", url, () => research(url, discovery)),
 	]);
 
 	onProgress?.({ step: "analyzePerf", status: "done" });

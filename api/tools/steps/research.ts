@@ -26,7 +26,7 @@ export const researchToolFactory = (cache?: KVStore) => (_env: Env) =>
 		execute: async ({ context }) => {
 			const { url } = context;
 			const discovery = context.discovery as unknown as DiscoveryResult;
-			const result = await cachedRun(cache, "research", url, () =>
+			const result = await cachedRun(cache, "research", "public", url, () =>
 				research(url, discovery),
 			);
 			return result as unknown as Record<string, unknown>;
