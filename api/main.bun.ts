@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import { buildAuthOptions } from "../src/auth/auth.ts";
 import { createBunSqliteAuthDB, migrate } from "../src/auth/db.ts";
 import { resolveSendOTPFromEnv } from "../src/auth/send-otp.ts";
+import { FileKVStore } from "../src/cache/fs.ts";
 import { createApp } from "./app.ts";
 
 const AUTH_DB_PATH = process.env.AUTH_DB_PATH ?? "data/auth.sqlite";
@@ -25,6 +26,7 @@ const app = createApp({
 		RESEND_API_KEY: process.env.RESEND_API_KEY,
 		RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
 	}),
+	cache: new FileKVStore(process.env.KV_DIR ?? ".kv"),
 });
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;

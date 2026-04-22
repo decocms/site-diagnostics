@@ -5,11 +5,16 @@ import { type Auth, createAuth } from "../src/auth/auth.ts";
 import { type AuthContext, authContext } from "../src/auth/context.ts";
 import type { AuthDB } from "../src/auth/db.ts";
 import { loadOrgCredentials, resolveOrg } from "../src/auth/resolve-org.ts";
+import type { KVStore } from "../src/cache/interface.ts";
 import { renderLoginPage } from "./lib/login-page.ts";
 import { getScreenshot } from "./lib/storage.ts";
 import { prompts } from "./prompts/index.ts";
 import { createDiagnoseAppResource } from "./resources/diagnose.ts";
-import { proprietaryTools, publicTools } from "./tools/index.ts";
+import {
+	createStepTools,
+	proprietaryTools,
+	publicTools,
+} from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
 
 // biome-ignore lint/suspicious/noExplicitAny: runtime.fetch signature compatibility
@@ -28,6 +33,8 @@ export interface AppConfig {
 	loginPage?: string;
 	/** Delivers OTP codes. Falls back to a console.log stub when omitted. */
 	sendOTP?: (data: { email: string; otp: string }) => Promise<void>;
+	/** KV store for per-domain step caching. When omitted, step tools skip caching. */
+	cache?: KVStore;
 }
 
 const colors = {
@@ -58,7 +65,7 @@ function getMethodColor(method: string): string {
 }
 
 export function createApp(config: AppConfig = {}) {
-	const { clientHTML, db, authBaseURL, authSecret, loginPage, sendOTP } =
+	const { clientHTML, db, authBaseURL, authSecret, loginPage, sendOTP, cache } =
 		config;
 
 	const getClientHTML = clientHTML
@@ -90,6 +97,17 @@ export function createApp(config: AppConfig = {}) {
 					resources: [createDiagnoseAppResource(getClientHTML)],
 				})
 			: publicRuntime;
+
+	// /api/mcp?steps exposes only the 5 step-level pipeline tools
+	// (discover, analyze_perf, analyze_seo, analyze_content, research).
+	// Hosts that orchestrate the diagnostic flow themselves use this
+	// surface to avoid wading through 17 low-level primitives.
+	const stepsRuntime = withRuntime<Env, typeof StateSchema>({
+		configuration: { state: StateSchema },
+		tools: createStepTools(cache),
+		prompts,
+		resources: [createDiagnoseAppResource(getClientHTML)],
+	});
 
 	const auth: Auth | null = db
 		? createAuth({
@@ -264,7 +282,9 @@ export function createApp(config: AppConfig = {}) {
 				// the time we get here any ?proprietary request is authed.
 				const chosen: Fetcher = url.searchParams.has("proprietary")
 					? fullRuntime.fetch
-					: fetcher;
+					: url.searchParams.has("steps")
+						? stepsRuntime.fetch
+						: fetcher;
 				return chosen(rewrittenReq, ...args);
 			}
 
