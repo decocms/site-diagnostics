@@ -22,13 +22,16 @@ export const analyzePerfToolFactory = (cache?: KVStore) => (_env: Env) =>
 			idempotentHint: true,
 			openWorldHint: true,
 		},
-		execute: async ({ context }) => {
+		execute: async ({ context, runtimeContext }) => {
 			const samples = context.samples as SampleSet;
+			const origin = runtimeContext?.req
+				? new URL(runtimeContext.req.url).origin
+				: "";
 			const result = await cachedRun(
 				cache,
 				"analyzePerf",
 				samples.homepage,
-				() => analyzePerformance(samples),
+				() => analyzePerformance(samples, origin),
 			);
 			return result as unknown as Record<string, unknown>;
 		},

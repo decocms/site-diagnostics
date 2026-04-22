@@ -63,9 +63,11 @@ function countImages(markdown: string): { total: number; withAlts: number } {
 	return { total, withAlts };
 }
 
-async function uploadFn(buf: Buffer, filename: string): Promise<string> {
-	await uploadScreenshot(buf, filename);
-	return `/api/screenshots/${filename}`;
+function makeUploadFn(origin: string) {
+	return async (buf: Buffer, filename: string): Promise<string> => {
+		await uploadScreenshot(buf, filename);
+		return `${origin}/api/screenshots/${filename}`;
+	};
 }
 
 // ── PDP Analysis ─────────────────────────────────────────
@@ -137,7 +139,9 @@ async function scrapeEditorial(url: string): Promise<EditorialScrape> {
 export async function analyzeContent(
 	samples: SampleSet,
 	discovery: DiscoveryResult,
+	origin = "",
 ): Promise<ContentData> {
+	const uploadFn = makeUploadFn(origin);
 	// Select up to 5 PDPs (from samples + discovery)
 	const pdpUrls = [...samples.pdps];
 	for (const url of discovery.crawl.sampleUrls.pdp) {

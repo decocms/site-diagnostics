@@ -28,14 +28,17 @@ export const analyzeContentToolFactory = (cache?: KVStore) => (_env: Env) =>
 			idempotentHint: true,
 			openWorldHint: true,
 		},
-		execute: async ({ context }) => {
+		execute: async ({ context, runtimeContext }) => {
 			const samples = context.samples as SampleSet;
 			const discovery = context.discovery as unknown as DiscoveryResult;
+			const origin = runtimeContext?.req
+				? new URL(runtimeContext.req.url).origin
+				: "";
 			const result = await cachedRun(
 				cache,
 				"analyzeContent",
 				samples.homepage,
-				() => analyzeContent(samples, discovery),
+				() => analyzeContent(samples, discovery, origin),
 			);
 			return result as unknown as Record<string, unknown>;
 		},
