@@ -25,6 +25,8 @@ import type {
 
 export interface PipelineConfig {
 	url: string;
+	/** Public origin (e.g. https://site-diagnostics.decocms.com) used to build absolute screenshot URLs. */
+	origin?: string;
 }
 
 export interface PipelineResult {
@@ -61,7 +63,7 @@ export async function runPublicPipeline(
 	cache: KVStore,
 	onProgress?: ProgressCallback,
 ): Promise<PipelineResult> {
-	const { url } = config;
+	const { url, origin = "" } = config;
 
 	// Step 1: Discover
 	onProgress?.({ step: "discover", status: "running" });
@@ -84,10 +86,12 @@ export async function runPublicPipeline(
 	onProgress?.({ step: "research", status: "running" });
 
 	const [perf, seo, content, researchData] = await Promise.all([
-		cachedRun(cache, "analyzePerf", url, () => analyzePerformance(samples)),
+		cachedRun(cache, "analyzePerf", url, () =>
+			analyzePerformance(samples, origin),
+		),
 		cachedRun(cache, "analyzeSeo", url, () => analyzeSeo(url, samples)),
 		cachedRun(cache, "analyzeContent", url, () =>
-			analyzeContent(samples, discovery),
+			analyzeContent(samples, discovery, origin),
 		),
 		cachedRun(cache, "research", url, () => research(url, discovery)),
 	]);

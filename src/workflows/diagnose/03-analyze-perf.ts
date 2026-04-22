@@ -95,9 +95,11 @@ function toScreenshotData(
 	};
 }
 
-async function uploadFn(buf: Buffer, filename: string): Promise<string> {
-	await uploadScreenshot(buf, filename);
-	return `/api/screenshots/${filename}`;
+function makeUploadFn(origin: string) {
+	return async (buf: Buffer, filename: string): Promise<string> => {
+		await uploadScreenshot(buf, filename);
+		return `${origin}/api/screenshots/${filename}`;
+	};
 }
 
 // ── Main Step ────────────────────────────────────────────
@@ -109,7 +111,9 @@ async function uploadFn(buf: Buffer, filename: string): Promise<string> {
  */
 export async function analyzePerformance(
 	samples: SampleSet,
+	origin = "",
 ): Promise<PerfData> {
+	const uploadFn = makeUploadFn(origin);
 	const harUrls = [samples.homepage, samples.plps[0], samples.pdps[0]].filter(
 		Boolean,
 	);
