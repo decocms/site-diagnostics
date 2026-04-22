@@ -5,6 +5,7 @@ import { type Auth, createAuth } from "../src/auth/auth.ts";
 import { type AuthContext, authContext } from "../src/auth/context.ts";
 import type { AuthDB } from "../src/auth/db.ts";
 import { loadOrgCredentials, resolveOrg } from "../src/auth/resolve-org.ts";
+import { renderLoginPage } from "./lib/login-page.ts";
 import { getScreenshot } from "./lib/storage.ts";
 import { prompts } from "./prompts/index.ts";
 import { createDiagnoseAppResource } from "./resources/diagnose.ts";
@@ -213,6 +214,15 @@ export function createApp(config: AppConfig = {}) {
 	function withMcpApiRoute(fetcher: Fetcher): Fetcher {
 		return async (req: Request, ...args) => {
 			const url = new URL(req.url);
+
+			if (url.pathname === "/login") {
+				return new Response(renderLoginPage(), {
+					headers: {
+						"content-type": "text/html; charset=utf-8",
+						"cache-control": "no-store",
+					},
+				});
+			}
 
 			if (url.pathname === "/mcp" || url.pathname.startsWith("/mcp/")) {
 				return new Response("Not Found", { status: 404 });
