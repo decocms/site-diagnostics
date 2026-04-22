@@ -16,6 +16,7 @@ interface WorkerEnv {
 	LOGIN_PAGE?: string;
 	RESEND_API_KEY?: string;
 	RESEND_FROM_EMAIL?: string;
+	ADMIN_SECRET?: string;
 	CREDS_ENCRYPTION_KEY?: string;
 }
 
@@ -35,6 +36,7 @@ function resolveApp(env: WorkerEnv): AppFetch {
 		loginPage: env.LOGIN_PAGE,
 		sendOTP: resolveSendOTPFromEnv(env),
 		cache: env.CACHE ? new CloudflareKVStore(env.CACHE) : undefined,
+		adminSecret: env.ADMIN_SECRET,
 		credsEncryptionKey: env.CREDS_ENCRYPTION_KEY,
 	});
 	cached = app.fetch;

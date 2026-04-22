@@ -27,6 +27,7 @@ const app = createApp({
 		RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
 	}),
 	cache: new FileKVStore(process.env.KV_DIR ?? ".kv"),
+	adminSecret: process.env.ADMIN_SECRET,
 	credsEncryptionKey: process.env.CREDS_ENCRYPTION_KEY,
 });
 

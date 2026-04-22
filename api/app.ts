@@ -40,6 +40,8 @@ export interface AppConfig {
 	sendOTP?: (data: { email: string; otp: string }) => Promise<void>;
 	/** KV store for per-domain step caching. When omitted, step tools skip caching. */
 	cache?: KVStore;
+	/** Bearer token for the /purge admin endpoint. When omitted, /purge returns 404. */
+	adminSecret?: string;
 	/**
 	 * Base64-encoded 32-byte key used to decrypt org_credentials rows.
 	 * Required to serve proprietary tools. When omitted, /api/mcp?proprietary
@@ -84,6 +86,7 @@ export function createApp(config: AppConfig = {}) {
 		loginPage,
 		sendOTP,
 		cache,
+		adminSecret,
 		credsEncryptionKey,
 	} = config;
 
@@ -278,6 +281,38 @@ export function createApp(config: AppConfig = {}) {
 
 			if (url.pathname === "/mcp" || url.pathname.startsWith("/mcp/")) {
 				return new Response("Not Found", { status: 404 });
+			}
+
+			// Admin cache purge. Gated by ADMIN_SECRET via Authorization header
+			// (not a query param — avoids leaking in logs/referers). Accepts
+			// `{ key }` for single-key purge or `{ domain }` to purge all keys
+			// prefixed with `domain:` (matches the cachedRun key scheme).
+			if (url.pathname === "/purge" && req.method === "POST") {
+				if (!adminSecret || !cache) {
+					return new Response("Not Found", { status: 404 });
+				}
+				const token = req.headers
+					.get("authorization")
+					?.replace(/^Bearer\s+/i, "");
+				if (token !== adminSecret) {
+					return new Response("Unauthorized", { status: 401 });
+				}
+				let body: { key?: unknown; domain?: unknown };
+				try {
+					body = (await req.json()) as typeof body;
+				} catch {
+					return new Response("Invalid JSON body", { status: 400 });
+				}
+				if (typeof body.key === "string" && body.key.length > 0) {
+					await cache.delete(body.key);
+					return Response.json({ purged: [body.key] });
+				}
+				if (typeof body.domain === "string" && body.domain.length > 0) {
+					const keys = await cache.list(`${body.domain}:`);
+					await Promise.all(keys.map((k) => cache.delete(k)));
+					return Response.json({ purged: keys });
+				}
+				return new Response("Missing key or domain in body", { status: 400 });
 			}
 
 			// Public share page: /d/{token} — renders the diagnostic UI with the
