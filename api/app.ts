@@ -3,8 +3,9 @@ import { join } from "node:path";
 import { withRuntime } from "@decocms/runtime";
 import { type Auth, createAuth } from "../src/auth/auth.ts";
 import { type AuthContext, authContext } from "../src/auth/context.ts";
+import { loadOrgCredentials } from "../src/auth/credentials.ts";
 import type { AuthDB } from "../src/auth/db.ts";
-import { loadOrgCredentials, resolveOrg } from "../src/auth/resolve-org.ts";
+import { resolveOrg } from "../src/auth/resolve-org.ts";
 import type { KVStore } from "../src/cache/interface.ts";
 import { renderLoginPage } from "./lib/login-page.ts";
 import {
@@ -41,6 +42,12 @@ export interface AppConfig {
 	cache?: KVStore;
 	/** Bearer token for the /purge admin endpoint. When omitted, /purge returns 404. */
 	adminSecret?: string;
+	/**
+	 * Base64-encoded 32-byte key used to decrypt org_credentials rows.
+	 * Required to serve proprietary tools. When omitted, /api/mcp?proprietary
+	 * returns 401 even for authenticated users — the server cannot read creds.
+	 */
+	credsEncryptionKey?: string;
 }
 
 const colors = {
@@ -80,6 +87,7 @@ export function createApp(config: AppConfig = {}) {
 		sendOTP,
 		cache,
 		adminSecret,
+		credsEncryptionKey,
 	} = config;
 
 	const getClientHTML = clientHTML
@@ -215,6 +223,16 @@ export function createApp(config: AppConfig = {}) {
 				);
 			}
 
+			// Without the encryption key we literally cannot decrypt creds.
+			// Fail closed rather than hand the request an empty bundle and
+			// pretend everything is fine.
+			if (!credsEncryptionKey) {
+				return unauthorizedForProprietary(
+					req,
+					"proprietary access requires CREDS_ENCRYPTION_KEY to be configured",
+				);
+			}
+
 			const session = await auth.api
 				.getSession({ headers: req.headers })
 				.catch(() => null);
@@ -236,7 +254,7 @@ export function createApp(config: AppConfig = {}) {
 				orgId,
 				isAnonymous: false,
 				loadCredentials: orgId
-					? () => loadOrgCredentials(db, orgId)
+					? () => loadOrgCredentials(db, orgId, credsEncryptionKey)
 					: async () => ({}),
 			};
 			return authContext.run(ctx, () => fetcher(req, ...args));

@@ -1,5 +1,6 @@
 import { cachedRun } from "../../cache/cached-run.ts";
 import type { KVStore } from "../../cache/interface.ts";
+import { KEYS } from "../../cache/keys.ts";
 import { discover } from "./01-discover.ts";
 import { selectSamples } from "./02-select-samples.ts";
 import { analyzePerformance } from "./03-analyze-perf.ts";
@@ -67,9 +68,11 @@ export async function runPublicPipeline(
 
 	// Step 1: Discover
 	onProgress?.({ step: "discover", status: "running" });
-	const discovery = await cachedRun(cache, "discover", url, () =>
-		discover(url),
-	);
+	const discovery = await cachedRun({
+		cache,
+		...KEYS.discover({ url }),
+		fn: () => discover(url),
+	});
 	onProgress?.({
 		step: "discover",
 		status: "done",
@@ -86,14 +89,26 @@ export async function runPublicPipeline(
 	onProgress?.({ step: "research", status: "running" });
 
 	const [perf, seo, content, researchData] = await Promise.all([
-		cachedRun(cache, "analyzePerf", url, () =>
-			analyzePerformance(samples, origin),
-		),
-		cachedRun(cache, "analyzeSeo", url, () => analyzeSeo(url, samples)),
-		cachedRun(cache, "analyzeContent", url, () =>
-			analyzeContent(samples, discovery, origin),
-		),
-		cachedRun(cache, "research", url, () => research(url, discovery)),
+		cachedRun({
+			cache,
+			...KEYS.analyzePerf({ url }),
+			fn: () => analyzePerformance(samples, origin),
+		}),
+		cachedRun({
+			cache,
+			...KEYS.analyzeSeo({ url }),
+			fn: () => analyzeSeo(url, samples),
+		}),
+		cachedRun({
+			cache,
+			...KEYS.analyzeContent({ url }),
+			fn: () => analyzeContent(samples, discovery, origin),
+		}),
+		cachedRun({
+			cache,
+			...KEYS.research({ url }),
+			fn: () => research(url, discovery),
+		}),
 	]);
 
 	onProgress?.({ step: "analyzePerf", status: "done" });

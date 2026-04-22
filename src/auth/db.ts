@@ -85,6 +85,11 @@ export function createD1AuthDB(d1: D1Database): AuthDB {
  * Applies BetterAuth's own schema (user/session/account/verification) and
  * our app tables (org_credentials + email mappings). Safe to call on every
  * startup — getMigrations only applies pending changes.
+ *
+ * Also upgrades the legacy `org_credentials(creds TEXT)` shape to the
+ * encrypted shape by dropping it — any rows would be unencrypted plaintext
+ * secrets, which is the problem we're fixing. Mirrors migrations/d1/0002
+ * for production D1.
  */
 export async function migrate(
 	db: AuthDB,
@@ -94,7 +99,20 @@ export async function migrate(
 	const { runMigrations } = await getMigrations(authOptions);
 	await runMigrations();
 
+	await upgradeLegacyOrgCredentials(db);
+
 	for (const stmt of ORG_SCHEMA_SQL) {
 		await db.run(stmt);
 	}
+}
+
+async function upgradeLegacyOrgCredentials(db: AuthDB): Promise<void> {
+	const legacyCol = await db.get<{ name: string }>(
+		"SELECT name FROM pragma_table_info('org_credentials') WHERE name = 'creds'",
+	);
+	if (!legacyCol) return;
+	console.warn(
+		"[auth] legacy org_credentials(creds TEXT) detected — dropping; re-save creds via saveOrgCredentials",
+	);
+	await db.run("DROP TABLE org_credentials");
 }

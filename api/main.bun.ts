@@ -28,6 +28,7 @@ const app = createApp({
 	}),
 	cache: new FileKVStore(process.env.KV_DIR ?? ".kv"),
 	adminSecret: process.env.ADMIN_SECRET,
+	credsEncryptionKey: process.env.CREDS_ENCRYPTION_KEY,
 });
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;

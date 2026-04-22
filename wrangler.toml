@@ -17,6 +17,7 @@ custom_domain = true
 binding = "D1"
 database_name = "site-diagnostics"
 database_id = "b703371e-0bbe-4eab-9a4b-8aee9643cb22"
+migrations_dir = "migrations/d1"
 
 [[kv_namespaces]]
 binding = "CACHE"
