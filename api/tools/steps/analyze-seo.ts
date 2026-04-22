@@ -1,6 +1,7 @@
 import { createTool } from "@decocms/runtime/tools";
 import { cachedRun } from "../../../src/cache/cached-run.ts";
 import type { KVStore } from "../../../src/cache/interface.ts";
+import { KEYS } from "../../../src/cache/keys.ts";
 import { analyzeSeo } from "../../../src/workflows/diagnose/04-analyze-seo.ts";
 import type { SampleSet } from "../../../src/workflows/diagnose/types.ts";
 import type { Env } from "../../types/env.ts";
@@ -26,9 +27,11 @@ export const analyzeSeoToolFactory = (cache?: KVStore) => (_env: Env) =>
 		execute: async ({ context }) => {
 			const { url } = context;
 			const samples = context.samples as SampleSet;
-			const result = await cachedRun(cache, "analyzeSeo", "public", url, () =>
-				analyzeSeo(url, samples),
-			);
+			const result = await cachedRun({
+				cache,
+				...KEYS.analyzeSeo({ url }),
+				fn: () => analyzeSeo(url, samples),
+			});
 			return result as unknown as Record<string, unknown>;
 		},
 	});

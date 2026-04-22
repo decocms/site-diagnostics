@@ -1,6 +1,7 @@
 import { createTool } from "@decocms/runtime/tools";
 import { cachedRun } from "../../../src/cache/cached-run.ts";
 import type { KVStore } from "../../../src/cache/interface.ts";
+import { KEYS } from "../../../src/cache/keys.ts";
 import { discover } from "../../../src/workflows/diagnose/01-discover.ts";
 import { selectSamples } from "../../../src/workflows/diagnose/02-select-samples.ts";
 import type { Env } from "../../types/env.ts";
@@ -24,9 +25,11 @@ export const discoverToolFactory = (cache?: KVStore) => (_env: Env) =>
 		},
 		execute: async ({ context }) => {
 			const { url } = context;
-			const discovery = await cachedRun(cache, "discover", "public", url, () =>
-				discover(url),
-			);
+			const discovery = await cachedRun({
+				cache,
+				...KEYS.discover({ url }),
+				fn: () => discover(url),
+			});
 			const samples = selectSamples(discovery);
 			return { ...discovery, samples } as unknown as Record<string, unknown>;
 		},

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { cachedRun } from "./cached-run.ts";
 import type { KVStore } from "./interface.ts";
+import { KEYS } from "./keys.ts";
 
 class MemKV implements KVStore {
 	store = new Map<string, unknown>();
@@ -21,8 +22,8 @@ class MemKV implements KVStore {
 
 const URL_A = "https://www.example.com/anything";
 
-describe("cachedRun scoping", () => {
-	it("public scope is shared across callers for the same domain", async () => {
+describe("cachedRun + KEYS", () => {
+	it("public step reuses the same entry across callers for the same domain", async () => {
 		const cache = new MemKV();
 		let calls = 0;
 		const fn = async () => {
@@ -30,21 +31,25 @@ describe("cachedRun scoping", () => {
 			return "result";
 		};
 
-		await cachedRun(cache, "discover", "public", URL_A, fn);
-		await cachedRun(cache, "discover", "public", URL_A, fn);
+		await cachedRun({ cache, ...KEYS.discover({ url: URL_A }), fn });
+		await cachedRun({ cache, ...KEYS.discover({ url: URL_A }), fn });
 
 		expect(calls).toBe(1);
 		expect(cache.store.has("www.example.com:public:discover")).toBe(true);
 	});
 
-	it("org scope isolates entries per org", async () => {
+	it("proprietary step isolates entries per org", async () => {
 		const cache = new MemKV();
 		let calls = 0;
 
-		const resultFor = (org: string) =>
-			cachedRun(cache, "sourceCdn", `org:${org}`, URL_A, async () => {
-				calls++;
-				return org === "alpha" ? "alpha-data" : "beta-data";
+		const resultFor = (orgId: string) =>
+			cachedRun({
+				cache,
+				...KEYS.sourceCdn({ url: URL_A, orgId }),
+				fn: async () => {
+					calls++;
+					return orgId === "alpha" ? "alpha-data" : "beta-data";
+				},
 			});
 
 		const a1 = await resultFor("alpha");
@@ -62,26 +67,38 @@ describe("cachedRun scoping", () => {
 		expect(cache.store.has("www.example.com:org:beta:sourceCdn")).toBe(true);
 	});
 
-	it("public and org scopes for the same step do not collide", async () => {
+	it("public and proprietary steps for the same domain do not collide", async () => {
 		const cache = new MemKV();
-
-		await cachedRun(cache, "fake", "public", URL_A, async () => "public-val");
-		await cachedRun(cache, "fake", "org:alpha", URL_A, async () => "org-val");
-
+		await cachedRun({
+			cache,
+			...KEYS.discover({ url: URL_A }),
+			fn: async () => "public-val",
+		});
+		await cachedRun({
+			cache,
+			...KEYS.sourceCdn({ url: URL_A, orgId: "alpha" }),
+			fn: async () => "org-val",
+		});
 		expect(cache.store.size).toBe(2);
 	});
 
 	it("domain prefix scan finds all entries for a domain (both scopes)", async () => {
 		const cache = new MemKV();
-		await cachedRun(cache, "discover", "public", URL_A, async () => 1);
-		await cachedRun(cache, "sourceCdn", "org:alpha", URL_A, async () => 2);
-		await cachedRun(
+		await cachedRun({
 			cache,
-			"discover",
-			"public",
-			"https://other.test/x",
-			async () => 3,
-		);
+			...KEYS.discover({ url: URL_A }),
+			fn: async () => 1,
+		});
+		await cachedRun({
+			cache,
+			...KEYS.sourceCdn({ url: URL_A, orgId: "alpha" }),
+			fn: async () => 2,
+		});
+		await cachedRun({
+			cache,
+			...KEYS.discover({ url: "https://other.test/x" }),
+			fn: async () => 3,
+		});
 
 		const forExample = await cache.list("www.example.com:");
 		expect(forExample.sort()).toEqual(
@@ -98,8 +115,47 @@ describe("cachedRun scoping", () => {
 			calls++;
 			return "x";
 		};
-		await cachedRun(undefined, "discover", "public", URL_A, fn);
-		await cachedRun(undefined, "discover", "public", URL_A, fn);
+		await cachedRun({
+			cache: undefined,
+			...KEYS.discover({ url: URL_A }),
+			fn,
+		});
+		await cachedRun({
+			cache: undefined,
+			...KEYS.discover({ url: URL_A }),
+			fn,
+		});
 		expect(calls).toBe(2);
+	});
+});
+
+describe("KEYS factories", () => {
+	it("public factories produce [domain, 'public', step]", () => {
+		expect(KEYS.discover({ url: URL_A }).key).toEqual([
+			"www.example.com",
+			"public",
+			"discover",
+		]);
+		expect(KEYS.research({ url: URL_A }).key).toEqual([
+			"www.example.com",
+			"public",
+			"research",
+		]);
+	});
+
+	it("org factories embed the org id", () => {
+		expect(KEYS.sourceCdn({ url: URL_A, orgId: "abc" }).key).toEqual([
+			"www.example.com",
+			"org:abc",
+			"sourceCdn",
+		]);
+	});
+
+	it("each step carries its own TTL", () => {
+		expect(KEYS.discover({ url: URL_A }).ttlMs).toBe(24 * 60 * 60 * 1000);
+		expect(KEYS.research({ url: URL_A }).ttlMs).toBe(7 * 24 * 60 * 60 * 1000);
+		expect(KEYS.sourceCdn({ url: URL_A, orgId: "x" }).ttlMs).toBe(
+			60 * 60 * 1000,
+		);
 	});
 });

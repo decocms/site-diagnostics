@@ -1,6 +1,7 @@
 import { createTool } from "@decocms/runtime/tools";
 import { cachedRun } from "../../../src/cache/cached-run.ts";
 import type { KVStore } from "../../../src/cache/interface.ts";
+import { KEYS } from "../../../src/cache/keys.ts";
 import { analyzeContent } from "../../../src/workflows/diagnose/05-analyze-content.ts";
 import type {
 	DiscoveryResult,
@@ -34,13 +35,11 @@ export const analyzeContentToolFactory = (cache?: KVStore) => (_env: Env) =>
 			const origin = runtimeContext?.req
 				? new URL(runtimeContext.req.url).origin
 				: "";
-			const result = await cachedRun(
+			const result = await cachedRun({
 				cache,
-				"analyzeContent",
-				"public",
-				samples.homepage,
-				() => analyzeContent(samples, discovery, origin),
-			);
+				...KEYS.analyzeContent({ url: samples.homepage }),
+				fn: () => analyzeContent(samples, discovery, origin),
+			});
 			return result as unknown as Record<string, unknown>;
 		},
 	});

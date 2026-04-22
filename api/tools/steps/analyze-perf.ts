@@ -1,6 +1,7 @@
 import { createTool } from "@decocms/runtime/tools";
 import { cachedRun } from "../../../src/cache/cached-run.ts";
 import type { KVStore } from "../../../src/cache/interface.ts";
+import { KEYS } from "../../../src/cache/keys.ts";
 import { analyzePerformance } from "../../../src/workflows/diagnose/03-analyze-perf.ts";
 import type { SampleSet } from "../../../src/workflows/diagnose/types.ts";
 import type { Env } from "../../types/env.ts";
@@ -27,13 +28,11 @@ export const analyzePerfToolFactory = (cache?: KVStore) => (_env: Env) =>
 			const origin = runtimeContext?.req
 				? new URL(runtimeContext.req.url).origin
 				: "";
-			const result = await cachedRun(
+			const result = await cachedRun({
 				cache,
-				"analyzePerf",
-				"public",
-				samples.homepage,
-				() => analyzePerformance(samples, origin),
-			);
+				...KEYS.analyzePerf({ url: samples.homepage }),
+				fn: () => analyzePerformance(samples, origin),
+			});
 			return result as unknown as Record<string, unknown>;
 		},
 	});
