@@ -16,7 +16,11 @@ import { saveDiagnosticTool } from "./save-diagnostic.ts";
 import { scrapePageTool } from "./scrape-page.ts";
 import { screenshotTool } from "./screenshot.ts";
 
-export const tools = [
+/**
+ * Tools that operate on public (blackbox) data only. Available to any
+ * client on `/api/mcp`, no auth required.
+ */
+export const publicTools = [
 	diagnoseTool,
 	fetchPageTool,
 	captureHarTool,
@@ -35,3 +39,14 @@ export const tools = [
 	loadDiagnosticTool,
 	deleteDiagnosticTool,
 ];
+
+/**
+ * Tools that query proprietary per-org data (CDN data lake, HyperDX,
+ * BigQuery, repo). Only visible to clients that connect with
+ * `?proprietary` AND have an authenticated (non-anonymous) session.
+ * Populated in a follow-up PR.
+ */
+export const proprietaryTools: typeof publicTools = [];
+
+/** Back-compat export — equals publicTools since proprietaryTools is empty. */
+export const tools = [...publicTools, ...proprietaryTools];

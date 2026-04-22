@@ -258,3 +258,13 @@ export interface ResearchData {
 	serp: SerpData[];
 	keywords: KeywordData[];
 }
+
+// ── Org Credentials ───────────────────────────────────────
+
+/**
+ * Per-org credential bundle stored as JSON in the `org_credentials.creds`
+ * column. Intentionally left as an open record for now — concrete per-source
+ * shapes (cdn, hyperdx, bigquery, repo) will be added alongside each real
+ * integration in a follow-up PR.
+ */
+export type OrgCredentials = Record<string, unknown>;
