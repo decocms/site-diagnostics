@@ -114,11 +114,11 @@ interface ReportViewProps {
 	diagnostic: Diagnostic;
 	onBack?: () => void;
 	/**
-	 * Mint a public share token for this diagnostic. When provided, a
+	 * Mint a public share link for this diagnostic. When provided, a
 	 * "Share" button appears next to Copy; clicking it calls this fn and
-	 * copies `{origin}/d/{token}` to the clipboard.
+	 * copies the returned `url` to the clipboard.
 	 */
-	onShare?: () => Promise<{ token: string } | null>;
+	onShare?: () => Promise<{ url: string } | null>;
 }
 
 export function ReportView({ diagnostic, onBack, onShare }: ReportViewProps) {
@@ -217,8 +217,7 @@ export function ReportView({ diagnostic, onBack, onShare }: ReportViewProps) {
 				setShareState("idle");
 				return;
 			}
-			const url = `${window.location.origin}/d/${result.token}`;
-			await navigator.clipboard.writeText(url);
+			await navigator.clipboard.writeText(result.url);
 			setShareState("copied");
 			setTimeout(() => setShareState("idle"), 2000);
 		} catch (err) {
