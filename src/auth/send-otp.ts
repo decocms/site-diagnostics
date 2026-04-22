@@ -25,7 +25,8 @@ export function createResendSendOTP(options: SendOTPOptions) {
 		});
 		if (!res.ok) {
 			const body = await res.text().catch(() => "");
-			throw new Error(`Resend send failed (${res.status}): ${body}`);
+			console.error(`[send-otp] Resend send failed (${res.status}): ${body}`);
+			throw new Error(`Resend send failed (${res.status})`);
 		}
 	};
 }

@@ -211,11 +211,16 @@ export function createApp(config: AppConfig = {}) {
 		};
 	}
 
+	// Only serve the built-in login page when loginPage is a local path —
+	// if it's an absolute URL the caller is hosting the page elsewhere.
+	const loginPath =
+		!loginPage || loginPage.startsWith("/") ? (loginPage ?? "/login") : null;
+
 	function withMcpApiRoute(fetcher: Fetcher): Fetcher {
 		return async (req: Request, ...args) => {
 			const url = new URL(req.url);
 
-			if (url.pathname === "/login") {
+			if (loginPath && url.pathname === loginPath) {
 				return new Response(renderLoginPage(), {
 					headers: {
 						"content-type": "text/html; charset=utf-8",
