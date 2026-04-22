@@ -16,6 +16,7 @@ interface WorkerEnv {
 	LOGIN_PAGE?: string;
 	RESEND_API_KEY?: string;
 	RESEND_FROM_EMAIL?: string;
+	ADMIN_SECRET?: string;
 }
 
 type AppFetch = ReturnType<typeof createApp>["fetch"];
@@ -34,6 +35,7 @@ function resolveApp(env: WorkerEnv): AppFetch {
 		loginPage: env.LOGIN_PAGE,
 		sendOTP: resolveSendOTPFromEnv(env),
 		cache: env.CACHE ? new CloudflareKVStore(env.CACHE) : undefined,
+		adminSecret: env.ADMIN_SECRET,
 	});
 	cached = app.fetch;
 	return cached;
