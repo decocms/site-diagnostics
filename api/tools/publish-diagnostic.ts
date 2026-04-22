@@ -55,7 +55,7 @@ export const publishDiagnosticTool = (_env: Env) =>
 				runtimeContext?.env?.MESH_REQUEST_CONTEXT?.organizationId ?? "default";
 			const origin = runtimeContext?.req
 				? new URL(runtimeContext.req.url).origin
-				: "";
+				: "https://site-diagnostics.decocms.com";
 
 			// Make sure the diagnostic exists in the caller's org before minting
 			// a token — otherwise we'd leak the ability to publish arbitrary IDs.
