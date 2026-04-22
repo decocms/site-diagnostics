@@ -47,6 +47,33 @@ bun run check        # TypeScript type checking
 bun run ci:check     # Biome lint + format check
 ```
 
+## Connecting a Client
+
+The MCP server is exposed over SSE at `/api/mcp`.
+
+- **Production**: `https://site-diagnostics.decocms.com/api/mcp`
+- **Local dev**: `http://localhost:3001/api/mcp`
+
+Query params select the access mode:
+
+- no param — public tools only, anonymous (zero friction)
+- `?anon` — explicit anonymous session
+- `?proprietary` — authenticated session; required for tools that need user credentials. Unauthenticated requests get a `401` with a `WWW-Authenticate` header pointing at the OAuth metadata, which MCP clients use to run the interactive OTP + OAuth flow (email code via Resend, consent screen, bearer token).
+
+### Claude Code
+
+```bash
+# public tools, no auth
+claude mcp add --transport sse site-diagnostics https://site-diagnostics.decocms.com/api/mcp
+
+# authenticated (triggers interactive OAuth flow on first use)
+claude mcp add --transport sse site-diagnostics "https://site-diagnostics.decocms.com/api/mcp?proprietary"
+```
+
+### Claude Desktop / other MCP hosts
+
+Point the host at the same URL with SSE transport. Hosts that support OAuth discovery (Claude Desktop, Claude Code, MCP Inspector) will auto-handle the login flow when the `?proprietary` endpoint returns `401`.
+
 ## Tech Stack
 
 - **Runtime**: [Bun](https://bun.sh)

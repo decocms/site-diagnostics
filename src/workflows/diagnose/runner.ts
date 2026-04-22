@@ -1,3 +1,4 @@
+import { cachedRun } from "../../cache/cached-run.ts";
 import type { KVStore } from "../../cache/interface.ts";
 import { discover } from "./01-discover.ts";
 import { selectSamples } from "./02-select-samples.ts";
@@ -47,36 +48,6 @@ export type ProgressCallback = (event: {
 	status: ProgressStatus;
 	message?: string;
 }) => void;
-
-// ── Cache Helper ──────────────────────────────────────────
-
-const STEP_TTLS: Record<string, number> = {
-	discover: 24 * 60 * 60 * 1000,
-	analyzePerf: 24 * 60 * 60 * 1000,
-	analyzeSeo: 24 * 60 * 60 * 1000,
-	analyzeContent: 24 * 60 * 60 * 1000,
-	research: 7 * 24 * 60 * 60 * 1000,
-};
-
-function cacheKey(domain: string, step: string): string {
-	return `${domain}:${step}`;
-}
-
-async function cachedRun<T>(
-	cache: KVStore,
-	step: string,
-	url: string,
-	fn: () => Promise<T>,
-): Promise<T> {
-	const domain = new URL(url).hostname;
-	const key = cacheKey(domain, step);
-	const cached = await cache.get<T>(key);
-	if (cached !== null) return cached;
-	const result = await fn();
-	const ttl = STEP_TTLS[step];
-	await cache.set(key, result, ttl);
-	return result;
-}
 
 // ── Pipeline Runner ──────────────────────────────────────
 

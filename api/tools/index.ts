@@ -1,3 +1,4 @@
+import type { KVStore } from "../../src/cache/interface.ts";
 import { auditSeoTool } from "./audit-seo.ts";
 import { captureHarTool } from "./capture-har.ts";
 import { crawlSiteTool } from "./crawl-site.ts";
@@ -15,6 +16,11 @@ import { researchTrafficTool } from "./research-traffic.ts";
 import { saveDiagnosticTool } from "./save-diagnostic.ts";
 import { scrapePageTool } from "./scrape-page.ts";
 import { screenshotTool } from "./screenshot.ts";
+import { analyzeContentToolFactory } from "./steps/analyze-content.ts";
+import { analyzePerfToolFactory } from "./steps/analyze-perf.ts";
+import { analyzeSeoToolFactory } from "./steps/analyze-seo.ts";
+import { discoverToolFactory } from "./steps/discover.ts";
+import { researchToolFactory } from "./steps/research.ts";
 
 /**
  * Tools that operate on public (blackbox) data only. Available to any
@@ -50,3 +56,20 @@ export const proprietaryTools: typeof publicTools = [];
 
 /** Back-compat export — equals publicTools since proprietaryTools is empty. */
 export const tools = [...publicTools, ...proprietaryTools];
+
+/**
+ * Step-level pipeline tools — the high-level orchestration surface.
+ * Clients that connect via `/api/mcp?steps` only see these five tools
+ * and drive the pipeline themselves. Each tool wraps a pure step
+ * function from `src/workflows/diagnose/` with optional per-domain
+ * caching (injected via `cache`).
+ */
+export function createStepTools(cache?: KVStore) {
+	return [
+		discoverToolFactory(cache),
+		analyzePerfToolFactory(cache),
+		analyzeSeoToolFactory(cache),
+		analyzeContentToolFactory(cache),
+		researchToolFactory(cache),
+	];
+}
