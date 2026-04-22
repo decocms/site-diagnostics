@@ -159,3 +159,48 @@ export async function deleteDiagnostic(
 	const updated = index.filter((m) => m.id !== id);
 	await putJson(idxKey, updated);
 }
+
+// ---------------------------------------------------------------------------
+// Public share tokens
+// ---------------------------------------------------------------------------
+// Token -> { orgId, diagnosticId, expiresAt } mapping kept outside the org
+// scope because the token itself is the access grant.
+
+export interface PublicShare {
+	token: string;
+	orgId: string;
+	diagnosticId: string;
+	createdAt: string;
+	/** ISO string; when absent the share never expires. */
+	expiresAt?: string;
+}
+
+function publicShareKey(token: string): string {
+	return `public-shares/${token}.json`;
+}
+
+export async function savePublicShare(share: PublicShare): Promise<void> {
+	await putJson(publicShareKey(share.token), share);
+}
+
+export async function loadPublicShare(
+	token: string,
+): Promise<PublicShare | null> {
+	const share = await getJson<PublicShare>(publicShareKey(token));
+	if (!share) return null;
+	if (share.expiresAt && new Date(share.expiresAt).getTime() < Date.now()) {
+		// Best-effort cleanup of expired shares.
+		await deletePublicShare(token).catch(() => {});
+		return null;
+	}
+	return share;
+}
+
+export async function deletePublicShare(token: string): Promise<void> {
+	await getClient().send(
+		new DeleteObjectCommand({
+			Bucket: getBucket(),
+			Key: publicShareKey(token),
+		}),
+	);
+}
