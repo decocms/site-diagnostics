@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import { buildAuthOptions } from "../src/auth/auth.ts";
 import { createBunSqliteAuthDB, migrate } from "../src/auth/db.ts";
+import { resolveSendOTPFromEnv } from "../src/auth/send-otp.ts";
 import { createApp } from "./app.ts";
 
 const AUTH_DB_PATH = process.env.AUTH_DB_PATH ?? "data/auth.sqlite";
@@ -16,7 +17,15 @@ const baseURL = process.env.BETTER_AUTH_URL;
 const secret = process.env.BETTER_AUTH_SECRET;
 await migrate(authDb, buildAuthOptions({ db: authDb, baseURL, secret }));
 
-const app = createApp({ db: authDb, authBaseURL: baseURL, authSecret: secret });
+const app = createApp({
+	db: authDb,
+	authBaseURL: baseURL,
+	authSecret: secret,
+	sendOTP: resolveSendOTPFromEnv({
+		RESEND_API_KEY: process.env.RESEND_API_KEY,
+		RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
+	}),
+});
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 

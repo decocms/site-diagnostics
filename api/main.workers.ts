@@ -1,6 +1,7 @@
 // Wrangler rules (wrangler.toml) resolve this import as a Text module.
 import CLIENT_HTML from "../dist/client/index.html";
 import { createD1AuthDB } from "../src/auth/db.ts";
+import { resolveSendOTPFromEnv } from "../src/auth/send-otp.ts";
 import { createApp } from "./app.ts";
 
 interface WorkerEnv {
@@ -8,6 +9,8 @@ interface WorkerEnv {
 	BETTER_AUTH_URL?: string;
 	BETTER_AUTH_SECRET?: string;
 	LOGIN_PAGE?: string;
+	RESEND_API_KEY?: string;
+	RESEND_FROM_EMAIL?: string;
 }
 
 type AppFetch = ReturnType<typeof createApp>["fetch"];
@@ -24,6 +27,7 @@ function resolveApp(env: WorkerEnv): AppFetch {
 		authBaseURL: env.BETTER_AUTH_URL,
 		authSecret: env.BETTER_AUTH_SECRET,
 		loginPage: env.LOGIN_PAGE,
+		sendOTP: resolveSendOTPFromEnv(env),
 	});
 	cached = app.fetch;
 	return cached;

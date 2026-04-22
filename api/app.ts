@@ -25,6 +25,8 @@ export interface AppConfig {
 	authSecret?: string;
 	/** MCP OAuth login page URL. Defaults to /login. */
 	loginPage?: string;
+	/** Delivers OTP codes. Falls back to a console.log stub when omitted. */
+	sendOTP?: (data: { email: string; otp: string }) => Promise<void>;
 }
 
 const colors = {
@@ -55,7 +57,8 @@ function getMethodColor(method: string): string {
 }
 
 export function createApp(config: AppConfig = {}) {
-	const { clientHTML, db, authBaseURL, authSecret, loginPage } = config;
+	const { clientHTML, db, authBaseURL, authSecret, loginPage, sendOTP } =
+		config;
 
 	const getClientHTML = clientHTML
 		? () => Promise.resolve(clientHTML)
@@ -93,6 +96,7 @@ export function createApp(config: AppConfig = {}) {
 				baseURL: authBaseURL,
 				secret: authSecret ?? process.env.BETTER_AUTH_SECRET,
 				loginPage,
+				sendOTP,
 			})
 		: null;
 
