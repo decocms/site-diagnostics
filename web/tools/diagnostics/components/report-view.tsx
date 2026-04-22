@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, Copy, ExternalLink } from "lucide-react";
+import { ArrowLeft, Check, Copy, ExternalLink, Share2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -112,11 +112,20 @@ function ScoreCard({ score, summary }: { score: number; summary?: string }) {
 
 interface ReportViewProps {
 	diagnostic: Diagnostic;
-	onBack: () => void;
+	onBack?: () => void;
+	/**
+	 * Mint a public share token for this diagnostic. When provided, a
+	 * "Share" button appears next to Copy; clicking it calls this fn and
+	 * copies `{origin}/d/{token}` to the clipboard.
+	 */
+	onShare?: () => Promise<{ token: string } | null>;
 }
 
-export function ReportView({ diagnostic, onBack }: ReportViewProps) {
+export function ReportView({ diagnostic, onBack, onShare }: ReportViewProps) {
 	const [copied, setCopied] = useState(false);
+	const [shareState, setShareState] = useState<"idle" | "working" | "copied">(
+		"idle",
+	);
 	const [tooltip, setTooltip] = useState<{
 		text: string;
 		x: number;
@@ -199,6 +208,25 @@ export function ReportView({ diagnostic, onBack }: ReportViewProps) {
 		setTimeout(() => setCopied(false), 2000);
 	}, [diagnostic.report]);
 
+	const handleShare = useCallback(async () => {
+		if (!onShare || shareState === "working") return;
+		setShareState("working");
+		try {
+			const result = await onShare();
+			if (!result) {
+				setShareState("idle");
+				return;
+			}
+			const url = `${window.location.origin}/d/${result.token}`;
+			await navigator.clipboard.writeText(url);
+			setShareState("copied");
+			setTimeout(() => setShareState("idle"), 2000);
+		} catch (err) {
+			console.error("Failed to create share link:", err);
+			setShareState("idle");
+		}
+	}, [onShare, shareState]);
+
 	const domain = getDomain(diagnostic.url);
 	const date = new Date(diagnostic.createdAt).toLocaleDateString("en-US", {
 		month: "short",
@@ -214,29 +242,54 @@ export function ReportView({ diagnostic, onBack }: ReportViewProps) {
 			>
 				{/* ── Report header — everything in one block ─────────── */}
 				<div className="mb-8 not-prose">
-					{/* Top row: Back left, Copy right */}
+					{/* Top row: Back left, actions right */}
 					<div className="flex items-center justify-between mb-6">
-						<button
-							type="button"
-							onClick={onBack}
-							className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors duration-150 cursor-pointer"
-						>
-							<ArrowLeft className="size-3.5" />
-							Back
-						</button>
+						{onBack ? (
+							<button
+								type="button"
+								onClick={onBack}
+								className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors duration-150 cursor-pointer"
+							>
+								<ArrowLeft className="size-3.5" />
+								Back
+							</button>
+						) : (
+							<span />
+						)}
 
-						<button
-							type="button"
-							onClick={handleCopy}
-							className="report-action-btn"
-						>
-							{copied ? (
-								<Check className="size-3.5" />
-							) : (
-								<Copy className="size-3.5" />
+						<div className="flex items-center gap-2">
+							{onShare && (
+								<button
+									type="button"
+									onClick={handleShare}
+									disabled={shareState === "working"}
+									className="report-action-btn"
+								>
+									{shareState === "copied" ? (
+										<Check className="size-3.5" />
+									) : (
+										<Share2 className="size-3.5" />
+									)}
+									{shareState === "copied"
+										? "Link copied!"
+										: shareState === "working"
+											? "Creating link…"
+											: "Share"}
+								</button>
 							)}
-							{copied ? "Copied!" : "Copy"}
-						</button>
+							<button
+								type="button"
+								onClick={handleCopy}
+								className="report-action-btn"
+							>
+								{copied ? (
+									<Check className="size-3.5" />
+								) : (
+									<Copy className="size-3.5" />
+								)}
+								{copied ? "Copied!" : "Copy"}
+							</button>
+						</div>
 					</div>
 
 					{/* Site identity */}

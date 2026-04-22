@@ -225,6 +225,25 @@ export default function DiagnosticsPage() {
 		[app],
 	);
 
+	const publishDiagnostic = useCallback(
+		async (id: string): Promise<{ token: string } | null> => {
+			if (!app) return null;
+			const result = await app.callServerTool({
+				name: "publish_diagnostic",
+				arguments: { id },
+			});
+			const text = result.content?.find(
+				(c: { type: string }) => c.type === "text",
+			);
+			if (text && "text" in text) {
+				const data = JSON.parse(text.text) as { token: string };
+				return { token: data.token };
+			}
+			return null;
+		},
+		[app],
+	);
+
 	useEffect(() => {
 		refreshHistory();
 	}, [refreshHistory]);
@@ -304,6 +323,7 @@ export default function DiagnosticsPage() {
 	);
 
 	if (view.type === "report") {
+		const reportId = view.diagnostic.id;
 		return (
 			<ReportView
 				diagnostic={view.diagnostic}
@@ -311,6 +331,7 @@ export default function DiagnosticsPage() {
 					refreshHistory();
 					setView({ type: "home" });
 				}}
+				onShare={() => publishDiagnostic(reportId)}
 			/>
 		);
 	}

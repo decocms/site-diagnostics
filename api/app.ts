@@ -7,7 +7,11 @@ import type { AuthDB } from "../src/auth/db.ts";
 import { loadOrgCredentials, resolveOrg } from "../src/auth/resolve-org.ts";
 import type { KVStore } from "../src/cache/interface.ts";
 import { renderLoginPage } from "./lib/login-page.ts";
-import { getScreenshot } from "./lib/storage.ts";
+import {
+	getScreenshot,
+	loadDiagnostic,
+	loadPublicShare,
+} from "./lib/storage.ts";
 import { prompts } from "./prompts/index.ts";
 import { createDiagnoseAppResource } from "./resources/diagnose.ts";
 import {
@@ -249,6 +253,50 @@ export function createApp(config: AppConfig = {}) {
 
 			if (url.pathname === "/mcp" || url.pathname.startsWith("/mcp/")) {
 				return new Response("Not Found", { status: 404 });
+			}
+
+			// Public share page: /d/{token} — renders the diagnostic UI with the
+			// report JSON injected into the HTML so the web app can boot in
+			// standalone mode (skipping the MCP handshake entirely).
+			if (url.pathname.startsWith("/d/") && req.method === "GET") {
+				const token = url.pathname.slice("/d/".length);
+				if (!/^[A-Za-z0-9_-]{16,64}$/.test(token)) {
+					return new Response("Not Found", { status: 404 });
+				}
+				const share = await loadPublicShare(token).catch(() => null);
+				if (!share) {
+					return new Response(
+						"This diagnostic link has expired or been revoked.",
+						{
+							status: 404,
+							headers: { "content-type": "text/plain; charset=utf-8" },
+						},
+					);
+				}
+				const diagnostic = await loadDiagnostic(
+					share.diagnosticId,
+					share.orgId,
+				).catch(() => null);
+				if (!diagnostic) {
+					return new Response("Diagnostic not found.", {
+						status: 404,
+						headers: { "content-type": "text/plain; charset=utf-8" },
+					});
+				}
+
+				const html = await getClientHTML();
+				// Escape `<` so `</script>` in report markdown can't break out.
+				const payload = JSON.stringify(diagnostic).replace(/</g, "\\u003c");
+				const injected = `<script>window.__PUBLIC_DIAGNOSTIC__=${payload};</script>`;
+				const withPayload = html.includes("</head>")
+					? html.replace("</head>", `${injected}</head>`)
+					: `${injected}${html}`;
+				return new Response(withPayload, {
+					headers: {
+						"content-type": "text/html; charset=utf-8",
+						"cache-control": "no-store",
+					},
+				});
 			}
 
 			// Proxy screenshots from R2

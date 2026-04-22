@@ -8,6 +8,7 @@ import { fetchPageTool } from "./fetch-page.ts";
 import { lighthouseTool } from "./lighthouse.ts";
 import { listDiagnosticsTool } from "./list-diagnostics.ts";
 import { loadDiagnosticTool } from "./load-diagnostic.ts";
+import { publishDiagnosticTool } from "./publish-diagnostic.ts";
 import { renderPageTool } from "./render-page.ts";
 import { researchBusinessTool } from "./research-business.ts";
 import { researchKeywordsTool } from "./research-keywords.ts";
@@ -21,6 +22,7 @@ import { analyzePerfToolFactory } from "./steps/analyze-perf.ts";
 import { analyzeSeoToolFactory } from "./steps/analyze-seo.ts";
 import { discoverToolFactory } from "./steps/discover.ts";
 import { researchToolFactory } from "./steps/research.ts";
+import { unpublishDiagnosticTool } from "./unpublish-diagnostic.ts";
 
 /**
  * Tools that operate on public (blackbox) data only. Available to any
@@ -44,6 +46,8 @@ export const publicTools = [
 	listDiagnosticsTool,
 	loadDiagnosticTool,
 	deleteDiagnosticTool,
+	publishDiagnosticTool,
+	unpublishDiagnosticTool,
 ];
 
 /**
