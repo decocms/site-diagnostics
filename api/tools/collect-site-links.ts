@@ -188,21 +188,27 @@ export const collectSiteLinksTool = (_env: Env) =>
 			try {
 				const map = await firecrawlMap(url, { limit: maxPages });
 				const pages = map.links.slice(0, maxPages);
-				const htmlPerPage = await mapConcurrent(pages, concurrency, fetchHtml);
 
 				const linkIndex = new Map<
 					string,
 					{ scope: "internal" | "external"; sources: Set<string> }
 				>();
-
 				let pagesFetched = 0;
-				pages.forEach((pageUrl, i) => {
-					const fetched = htmlPerPage[i];
+
+				// Stream: fetch + extract inside the same worker task so each
+				// page's HTML can be GC'd as soon as its links are merged into
+				// linkIndex. Accumulating all HTML first blew through the 128MB
+				// per-request memory limit on Cloudflare Workers for sites
+				// with heavy markup (e.g. ecom catalogs with inline product
+				// JSON). Peak memory now scales with concurrency × page size
+				// instead of total pages × page size.
+				await mapConcurrent(pages, concurrency, async (pageUrl) => {
+					const fetched = await fetchHtml(pageUrl);
 					if (!fetched) return;
 					pagesFetched++;
-					// Resolve relative hrefs against the final URL after redirects;
-					// attribute the source page by the original (pre-redirect) URL
-					// since that's what a human would recognize.
+					// Resolve relative hrefs against the final URL after
+					// redirects; attribute the source page by the original
+					// (pre-redirect) URL since that's what a human recognizes.
 					for (const { href, scope } of extractLinksWithScope(
 						fetched.html,
 						fetched.finalUrl,
