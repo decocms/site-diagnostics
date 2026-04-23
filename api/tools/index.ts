@@ -1,7 +1,8 @@
 import type { KVStore } from "../../src/cache/interface.ts";
 import { auditSeoTool } from "./audit-seo.ts";
 import { captureHarTool } from "./capture-har.ts";
-import { checkBrokenLinksTool } from "./check-broken-links.ts";
+import { checkUrlsTool } from "./check-urls.ts";
+import { collectSiteLinksTool } from "./collect-site-links.ts";
 import { crawlSiteTool } from "./crawl-site.ts";
 import { deleteDiagnosticTool } from "./delete-diagnostic.ts";
 import { diagnoseTool } from "./diagnose.ts";
@@ -37,7 +38,8 @@ export const publicTools = [
 	renderPageTool,
 	screenshotTool,
 	crawlSiteTool,
-	checkBrokenLinksTool,
+	collectSiteLinksTool,
+	checkUrlsTool,
 	auditSeoTool,
 	researchSerpTool,
 	researchKeywordsTool,
