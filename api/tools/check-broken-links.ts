@@ -15,6 +15,16 @@ const PAGE_FETCH_TIMEOUT_MS = 15_000;
 const LINK_CHECK_TIMEOUT_MS = 10_000;
 const USER_AGENT = "Mozilla/5.0 (compatible; SiteDiagnosticsBot/1.0)";
 
+// Default wall-clock budget: 80s keeps a safe margin under typical
+// upstream proxy timeouts (e.g. Cloudflare's ~100s). Capped below 90s
+// because in-flight checkLink calls can extend up to LINK_CHECK_TIMEOUT_MS
+// past the "stop dispatching" point.
+const DEFAULT_TIME_BUDGET_MS = 80_000;
+// When the deadline is this close, workers stop picking up new items.
+// Must be > LINK_CHECK_TIMEOUT_MS so in-flight link checks can finish
+// before the overall deadline is reached.
+const BUDGET_SAFETY_MARGIN_MS = 12_000;
+
 // ── Schemas ────────────────────────────────────────────────
 
 export const checkBrokenLinksInputSchema = z.object({
@@ -39,6 +49,14 @@ export const checkBrokenLinksInputSchema = z.object({
 		.describe(
 			"Parallel HTTP requests when fetching pages and checking targets",
 		),
+	timeBudgetMs: z
+		.number()
+		.min(10_000)
+		.max(90_000)
+		.default(DEFAULT_TIME_BUDGET_MS)
+		.describe(
+			"Wall-clock budget for the whole scan. When the budget is about to run out, the tool stops dispatching new work and returns what it has with partialResults: true. Keep under 90s to stay below typical proxy timeouts.",
+		),
 });
 
 export type CheckBrokenLinksInput = z.infer<typeof checkBrokenLinksInputSchema>;
@@ -57,7 +75,19 @@ export const checkBrokenLinksOutputSchema = z.object({
 	linksChecked: z.number(),
 	targetsSkipped: z
 		.number()
-		.describe("Unique link targets that were not checked (cap reached)"),
+		.describe(
+			"Unique link targets that were never queued because the MAX_TARGETS cap was reached",
+		),
+	targetsUnchecked: z
+		.number()
+		.describe(
+			"Unique link targets that were queued but not checked because the time budget ran out",
+		),
+	partialResults: z
+		.boolean()
+		.describe(
+			"True when the time budget ran out before all work completed. The agent should treat findings as a partial snapshot — future runs will cover what was missed.",
+		),
 	broken: z.array(
 		z.object({
 			targetUrl: z.string(),
@@ -246,17 +276,24 @@ async function checkLink(url: string): Promise<LinkCheckResult> {
 	return { status: 0, chain, errorKind: "redirect-loop" };
 }
 
-/** Run an async mapper over items with a concurrency cap. */
+/**
+ * Run an async mapper over items with a concurrency cap. When shouldStop
+ * returns true, workers finish any in-flight call and stop picking up
+ * new items — the resulting array has undefined slots for items that
+ * were never dispatched.
+ */
 async function mapConcurrent<T, R>(
 	items: T[],
 	limit: number,
 	fn: (item: T) => Promise<R>,
-): Promise<R[]> {
-	const out: R[] = new Array(items.length);
+	shouldStop?: () => boolean,
+): Promise<(R | undefined)[]> {
+	const out: (R | undefined)[] = new Array(items.length);
 	let cursor = 0;
 
 	async function worker() {
 		while (true) {
+			if (shouldStop?.()) return;
 			const i = cursor++;
 			if (i >= items.length) return;
 			out[i] = await fn(items[i]);
@@ -277,7 +314,9 @@ export const checkBrokenLinksTool = (_env: Env) =>
 			"Scan a site for broken links and problematic redirects. Crawls up to N pages via Firecrawl map, " +
 			"fetches each to extract outbound <a href> links, then checks every unique target with HEAD/GET " +
 			"to determine status. Returns broken links grouped by target URL (with source-page attribution) " +
-			"and long redirect chains. Use for: link health audits, periodic broken-link monitoring.",
+			"and long redirect chains. Bounded by a wall-clock budget (timeBudgetMs) — when the budget runs " +
+			"out, returns partial results with partialResults: true so large sites degrade gracefully instead " +
+			"of timing out. Use for: link health audits, periodic broken-link monitoring.",
 		inputSchema: checkBrokenLinksInputSchema,
 		outputSchema: checkBrokenLinksOutputSchema,
 		annotations: {
@@ -287,7 +326,22 @@ export const checkBrokenLinksTool = (_env: Env) =>
 			openWorldHint: true,
 		},
 		execute: async ({ context }) => {
-			const { url, maxPages, checkExternal, concurrency } = context;
+			const { url, maxPages, checkExternal, concurrency, timeBudgetMs } =
+				context;
+
+			// Wall-clock budget. Set once up-front; both phase 2 (page fetching)
+			// and phase 3 (target checking) share it. When the deadline is
+			// within BUDGET_SAFETY_MARGIN_MS, workers stop dispatching new
+			// items so any in-flight calls can complete before we return.
+			const deadline = Date.now() + timeBudgetMs;
+			let budgetExhausted = false;
+			const shouldStop = () => {
+				if (Date.now() > deadline - BUDGET_SAFETY_MARGIN_MS) {
+					budgetExhausted = true;
+					return true;
+				}
+				return false;
+			};
 
 			try {
 				// 1. Discover pages on the site
@@ -295,7 +349,12 @@ export const checkBrokenLinksTool = (_env: Env) =>
 				const pages = map.links.slice(0, maxPages);
 
 				// 2. Fetch each page's HTML in parallel and extract outbound links
-				const htmlPerPage = await mapConcurrent(pages, concurrency, fetchHtml);
+				const htmlPerPage = await mapConcurrent(
+					pages,
+					concurrency,
+					fetchHtml,
+					shouldStop,
+				);
 
 				// 3. Build unique target → { scope, source pages } index
 				const linkIndex = new Map<
@@ -328,17 +387,31 @@ export const checkBrokenLinksTool = (_env: Env) =>
 				const targets = allTargets.slice(0, MAX_TARGETS);
 				const targetsSkipped = allTargets.length - targets.length;
 
-				// 4. Check every unique target
-				const results = await mapConcurrent(targets, concurrency, checkLink);
+				// 4. Check every unique target (subject to time budget)
+				const results = await mapConcurrent(
+					targets,
+					concurrency,
+					checkLink,
+					shouldStop,
+				);
 
 				// 5. Classify into broken vs redirect-chain-long
 				const broken: CheckBrokenLinksOutput["broken"] = [];
 				const redirectChains: CheckBrokenLinksOutput["redirectChains"] = [];
+				let targetsUnchecked = 0;
 
 				results.forEach((result, i) => {
 					const target = targets[i];
 					const entry = linkIndex.get(target);
 					if (!entry) return;
+
+					// Budget ran out before this target was dispatched — skip silently.
+					// It'll be picked up by a future run.
+					if (!result) {
+						targetsUnchecked++;
+						return;
+					}
+
 					const sources = Array.from(entry.sources);
 					const sourcesTrimmed = sources.slice(0, MAX_SOURCE_PAGES);
 					const sourcePagesTotal = sources.length;
@@ -376,8 +449,10 @@ export const checkBrokenLinksTool = (_env: Env) =>
 				return {
 					url,
 					pagesCrawled: pages.length,
-					linksChecked: targets.length,
+					linksChecked: targets.length - targetsUnchecked,
 					targetsSkipped,
+					targetsUnchecked,
+					partialResults: budgetExhausted,
 					broken,
 					redirectChains,
 				};
@@ -388,6 +463,8 @@ export const checkBrokenLinksTool = (_env: Env) =>
 					pagesCrawled: 0,
 					linksChecked: 0,
 					targetsSkipped: 0,
+					targetsUnchecked: 0,
+					partialResults: budgetExhausted,
 					broken: [],
 					redirectChains: [],
 					error: msg,
