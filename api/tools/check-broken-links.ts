@@ -139,8 +139,15 @@ function extractLinksWithScope(
 	return out;
 }
 
-/** Fetch a page and return its HTML, or null if not HTML / failed. */
-async function fetchHtml(url: string): Promise<string | null> {
+/**
+ * Fetch a page and return its HTML plus the final URL after redirects.
+ * The final URL is the base we must use when resolving relative hrefs —
+ * using the pre-redirect URL mis-resolves `../` and same-directory paths
+ * whenever a redirect changes the path's directory.
+ */
+async function fetchHtml(
+	url: string,
+): Promise<{ html: string; finalUrl: string } | null> {
 	try {
 		const u = new URL(url);
 		if (!/^https?:$/.test(u.protocol)) return null;
@@ -158,7 +165,7 @@ async function fetchHtml(url: string): Promise<string | null> {
 
 		const contentType = resp.headers.get("content-type") ?? "";
 		if (!contentType.includes("html")) return null;
-		return await resp.text();
+		return { html: await resp.text(), finalUrl: resp.url };
 	} catch {
 		return null;
 	}
@@ -297,9 +304,15 @@ export const checkBrokenLinksTool = (_env: Env) =>
 				>();
 
 				pages.forEach((pageUrl, i) => {
-					const html = htmlPerPage[i];
-					if (!html) return;
-					for (const { href, scope } of extractLinksWithScope(html, pageUrl)) {
+					const fetched = htmlPerPage[i];
+					if (!fetched) return;
+					// Resolve relative hrefs against the final URL after redirects;
+					// attribute the source page by the original (pre-redirect) URL
+					// since that's what a human would recognize.
+					for (const { href, scope } of extractLinksWithScope(
+						fetched.html,
+						fetched.finalUrl,
+					)) {
 						if (scope === "external" && !checkExternal) continue;
 						let entry = linkIndex.get(href);
 						if (!entry) {
