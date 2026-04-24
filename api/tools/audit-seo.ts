@@ -28,6 +28,71 @@ function isPdpUrl(url: string): boolean {
 const SAMPLE_SIZE = 5;
 const FETCH_TIMEOUT_MS = 10_000;
 
+/** Max number of example URLs attached to each issue entry in the output. */
+const MAX_SAMPLE_URLS = 20;
+
+/**
+ * Predicate flags on OnPagePageItem.checks that correlate with a page being
+ * non-indexable. Kept permissive because DataForSEO's flag naming drifts
+ * across accounts/versions — better a near-match than a false empty list.
+ */
+const NON_INDEXABLE_CHECK_KEYS = [
+	"is_redirect",
+	"is_4xx_code",
+	"is_5xx_code",
+	"meta_no_index",
+	"no_index",
+	"noindex",
+	"canonical_different_from_url",
+] as const;
+
+/**
+ * Sample up to `limit` URLs from `pages` that satisfy `predicate`.
+ * Preserves crawl order so early/shallow pages land in the sample first —
+ * those are the ones a human maintainer is most likely to recognize.
+ */
+function sampleUrlsWhere<T extends { url: string }>(
+	pages: T[],
+	predicate: (p: T) => boolean,
+	limit: number = MAX_SAMPLE_URLS,
+): string[] {
+	const out: string[] = [];
+	for (const p of pages) {
+		if (out.length >= limit) break;
+		if (predicate(p)) out.push(p.url);
+	}
+	return out;
+}
+
+/**
+ * Group pages by a string key (title, description, etc.) and return a flat
+ * sample of URLs drawn from groups with more than one member (the actual
+ * duplicates). Pages with a falsy key are skipped.
+ */
+function sampleDuplicateUrls<T extends { url: string }>(
+	pages: T[],
+	keyFn: (p: T) => string | null | undefined,
+	limit: number = MAX_SAMPLE_URLS,
+): string[] {
+	const groups = new Map<string, string[]>();
+	for (const p of pages) {
+		const key = keyFn(p);
+		if (!key) continue;
+		const arr = groups.get(key) ?? [];
+		arr.push(p.url);
+		groups.set(key, arr);
+	}
+	const out: string[] = [];
+	for (const urls of groups.values()) {
+		if (urls.length < 2) continue; // not actually duplicated
+		for (const u of urls) {
+			if (out.length >= limit) return out;
+			out.push(u);
+		}
+	}
+	return out;
+}
+
 /**
  * Find PDP URLs from crawl results, falling back to the product sitemap.
  */
@@ -198,6 +263,14 @@ export const auditSeoOutputSchema = z.object({
 			type: z.string(),
 			count: z.number(),
 			severity: z.enum(["critical", "medium", "low"]),
+			sampleUrls: z
+				.array(z.string())
+				.describe(
+					"Up to MAX_SAMPLE_URLS example URLs where this issue was detected. " +
+						"Empty when the underlying audit doesn't expose per-URL detail for this " +
+						"issue type (e.g. broken links, duplicate content). Consumers should show " +
+						"these to make aggregate findings actionable.",
+				),
 		}),
 	),
 	contentStats: z.object({
@@ -268,36 +341,51 @@ export const auditSeoTool = (_env: Env) =>
 						type: "Broken links",
 						count: pm.brokenLinks,
 						severity: "critical",
+						// DataForSEO reports an aggregate count but doesn't surface
+						// which source pages contain broken outbound links in the
+						// summary. Leave empty; a dedicated call would be needed.
+						sampleUrls: [],
 					});
 				if (pm.duplicateTitle > 0)
 					issues.push({
 						type: "Duplicate title tags",
 						count: pm.duplicateTitle,
 						severity: "medium",
+						sampleUrls: sampleDuplicateUrls(pages, (p) => p.meta.title),
 					});
 				if (pm.duplicateDescription > 0)
 					issues.push({
 						type: "Duplicate meta descriptions",
 						count: pm.duplicateDescription,
 						severity: "medium",
+						sampleUrls: sampleDuplicateUrls(pages, (p) => p.meta.description),
 					});
 				if (pm.duplicateContent > 0)
 					issues.push({
 						type: "Duplicate content pages",
 						count: pm.duplicateContent,
 						severity: "medium",
+						// DataForSEO computes duplicate-content clusters server-side
+						// and doesn't return the per-URL grouping in the summary.
+						sampleUrls: [],
 					});
 				if (pm.nonIndexable > 0)
 					issues.push({
 						type: "Non-indexable pages",
 						count: pm.nonIndexable,
 						severity: "medium",
+						sampleUrls: sampleUrlsWhere(pages, (p) =>
+							NON_INDEXABLE_CHECK_KEYS.some((k) => p.checks[k]),
+						),
 					});
 				if (pm.brokenResources > 0)
 					issues.push({
 						type: "Broken resources (images, scripts)",
 						count: pm.brokenResources,
 						severity: "low",
+						// Broken resources are sub-page assets, not the crawled
+						// pages themselves — no direct URL mapping available.
+						sampleUrls: [],
 					});
 
 				// Page-level aggregations
@@ -307,6 +395,7 @@ export const auditSeoTool = (_env: Env) =>
 						type: "Pages missing H1 tag",
 						count: pagesWithNoH1,
 						severity: "medium",
+						sampleUrls: sampleUrlsWhere(pages, (p) => p.checks.no_h1_tag),
 					});
 
 				const pagesWithoutMeta = pages.filter(
@@ -317,6 +406,7 @@ export const auditSeoTool = (_env: Env) =>
 						type: "Pages missing meta description",
 						count: pagesWithoutMeta,
 						severity: "medium",
+						sampleUrls: sampleUrlsWhere(pages, (p) => !p.meta.description),
 					});
 
 				// Content stats
