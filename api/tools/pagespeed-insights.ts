@@ -8,6 +8,12 @@ import type { Env } from "../types/env.ts";
 const PSI_ENDPOINT =
 	"https://www.googleapis.com/pagespeedonline/v5/runPagespeed";
 const PSI_TIMEOUT_MS = 90_000;
+// Retry once on transient PSI failures — 5xx, 429, network errors, or a
+// lighthouseResult.runtimeError (PSI returns 200 with a runtimeError when
+// Lighthouse itself crashed while auditing). Most of these succeed on
+// second attempt; a fixed short backoff is enough.
+const PSI_MAX_RETRIES = 1;
+const PSI_RETRY_BACKOFF_MS = 2_000;
 
 // Lighthouse audit IDs we care about surfacing from the Lab result.
 const LAB_METRIC_AUDITS = [
@@ -232,6 +238,92 @@ function mapLabAudit(audit: any): z.infer<typeof labAuditSchema> | undefined {
 	};
 }
 
+/** Build the PSI request URL. Pulled out so the retry loop stays clean. */
+function buildPsiUrl(
+	url: string,
+	strategy: string,
+	categories: readonly string[],
+): string {
+	const params = new URLSearchParams();
+	params.set("url", url);
+	params.set("strategy", strategy);
+	for (const cat of categories) params.append("category", cat);
+	const apiKey = process.env.PAGESPEED_API_KEY;
+	if (apiKey) params.set("key", apiKey);
+	return `${PSI_ENDPOINT}?${params.toString()}`;
+}
+
+/**
+ * Fetch PSI with one retry on transient failures.
+ *
+ * What counts as transient:
+ *  - Network error (fetch throws, e.g. timeout)
+ *  - HTTP 5xx or 429 from PSI
+ *  - HTTP 200 but `lighthouseResult.runtimeError` is set (PSI's way of
+ *    signaling that Lighthouse crashed mid-audit — common on very slow
+ *    or JS-error-heavy pages)
+ *
+ * Non-transient failures (4xx other than 429, malformed JSON) fail immediately.
+ */
+async function fetchPsiWithRetry(
+	requestUrl: string,
+	// biome-ignore lint/suspicious/noExplicitAny: PSI response is loose JSON
+): Promise<any> {
+	let lastError: Error | null = null;
+
+	for (let attempt = 0; attempt <= PSI_MAX_RETRIES; attempt++) {
+		if (attempt > 0) {
+			console.log(
+				`[pagespeed_insights] retry ${attempt}/${PSI_MAX_RETRIES} after: ${lastError?.message ?? "unknown"}`,
+			);
+			await new Promise((r) => setTimeout(r, PSI_RETRY_BACKOFF_MS));
+		}
+
+		try {
+			const resp = await fetch(requestUrl, {
+				headers: { accept: "application/json" },
+				signal: AbortSignal.timeout(PSI_TIMEOUT_MS),
+			});
+
+			if (!resp.ok) {
+				const transient = resp.status >= 500 || resp.status === 429;
+				const body = await resp.text();
+				const err = new Error(
+					`PageSpeed Insights API error (${resp.status}): ${body.slice(0, 500)}`,
+				);
+				if (transient && attempt < PSI_MAX_RETRIES) {
+					lastError = err;
+					continue;
+				}
+				throw err;
+			}
+
+			// biome-ignore lint/suspicious/noExplicitAny: PSI JSON is loose
+			const json: any = await resp.json();
+
+			const runtimeError = json?.lighthouseResult?.runtimeError;
+			if (runtimeError && attempt < PSI_MAX_RETRIES) {
+				lastError = new Error(
+					`PSI lighthouseResult.runtimeError: ${runtimeError.code ?? ""} ${runtimeError.message ?? ""}`.trim(),
+				);
+				continue;
+			}
+
+			return json;
+		} catch (err) {
+			// Network errors / aborts / thrown above. Only retry if we still have budget.
+			if (attempt < PSI_MAX_RETRIES) {
+				lastError = err instanceof Error ? err : new Error(String(err));
+				continue;
+			}
+			throw err;
+		}
+	}
+
+	// Unreachable in practice — loop either returns or throws — but satisfies TS.
+	throw lastError ?? new Error("PSI fetch failed with no captured error");
+}
+
 // ── Tool Definition ────────────────────────────────────────
 
 export const pagespeedInsightsTool = (_env: Env) =>
@@ -253,27 +345,8 @@ export const pagespeedInsightsTool = (_env: Env) =>
 			const { url, strategy, categories } = context;
 
 			try {
-				const params = new URLSearchParams();
-				params.set("url", url);
-				params.set("strategy", strategy);
-				for (const cat of categories) params.append("category", cat);
-				const apiKey = process.env.PAGESPEED_API_KEY;
-				if (apiKey) params.set("key", apiKey);
-
-				const response = await fetch(`${PSI_ENDPOINT}?${params.toString()}`, {
-					headers: { accept: "application/json" },
-					signal: AbortSignal.timeout(PSI_TIMEOUT_MS),
-				});
-
-				if (!response.ok) {
-					const body = await response.text();
-					throw new Error(
-						`PageSpeed Insights API error (${response.status}): ${body.slice(0, 500)}`,
-					);
-				}
-
-				// biome-ignore lint/suspicious/noExplicitAny: PSI response is loose JSON
-				const json: any = await response.json();
+				const requestUrl = buildPsiUrl(url, strategy, categories);
+				const json = await fetchPsiWithRetry(requestUrl);
 				const lr = json.lighthouseResult ?? {};
 				const audits = (lr.audits ?? {}) as Record<string, unknown>;
 				const cats = (lr.categories ?? {}) as Record<string, unknown>;
