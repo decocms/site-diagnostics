@@ -10,6 +10,7 @@ import { fetchPageTool } from "./fetch-page.ts";
 import { lighthouseTool } from "./lighthouse.ts";
 import { listDiagnosticsTool } from "./list-diagnostics.ts";
 import { loadDiagnosticTool } from "./load-diagnostic.ts";
+import { pagespeedInsightsTool } from "./pagespeed-insights.ts";
 import { publishDiagnosticTool } from "./publish-diagnostic.ts";
 import { renderPageTool } from "./render-page.ts";
 import { researchBusinessTool } from "./research-business.ts";
@@ -35,6 +36,7 @@ export const publicTools = [
 	fetchPageTool,
 	captureHarTool,
 	lighthouseTool,
+	pagespeedInsightsTool,
 	renderPageTool,
 	screenshotTool,
 	crawlSiteTool,
