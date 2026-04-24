@@ -240,7 +240,7 @@ export const pagespeedInsightsTool = (_env: Env) =>
 		description:
 			"Run Google PageSpeed Insights on a URL. Returns both Field (CrUX real-user data — Google's actual Core Web Vitals ranking signal, 28-day p75 aggregates) and Lab (Lighthouse synthetic single-run) metrics. " +
 			"Use Field (urlField / originField) for CWV band classification — these are what Google actually assesses for ranking. Use Lab (opportunities, diagnostics) to identify specific fixes. " +
-			"Field data may be unavailable for low-traffic URLs (urlFieldAvailable: false); fall back to originField when that happens. Requires PAGESPEED_API_KEY env var for authenticated quota.",
+			"Field data may be unavailable for low-traffic URLs (urlFieldAvailable: false); fall back to originField when that happens.",
 		inputSchema: pagespeedInsightsInputSchema,
 		outputSchema: pagespeedInsightsOutputSchema,
 		annotations: {
