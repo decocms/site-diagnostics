@@ -6,6 +6,26 @@ compatibility_flags = ["nodejs_compat"]
 [build]
 command = "bun scripts/build-workers.ts"
 
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = true
+
+[[rules]]
+type = "Data"
+globs = ["**/*.ttf"]
+fallthrough = true
+
+[[rules]]
+type = "Data"
+globs = ["**/*.png"]
+fallthrough = true
+
+[[rules]]
+type = "CompiledWasm"
+globs = ["**/*.wasm"]
+fallthrough = true
+
 [observability]
 enabled = true
 
