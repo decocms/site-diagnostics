@@ -1,36 +1,43 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { initWasm, Resvg } from "@resvg/resvg-wasm";
 import satori from "satori";
 import type { Diagnostic } from "../types/diagnostic.ts";
 
 // ── Singletons initialised once per process ──────────────────────────────────
+// Fetched from CDN once and held in memory. Works in both Bun (local dev) and
+// Cloudflare Workers (production) — no filesystem required.
 
-let resvgReady = false;
+const RESVG_WASM_URL =
+	"https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm";
+const INTER_REGULAR_URL =
+	"https://github.com/rsms/inter/raw/v4.0/extras/ttf/Inter-Regular.ttf";
+const INTER_BOLD_URL =
+	"https://github.com/rsms/inter/raw/v4.0/extras/ttf/Inter-Bold.ttf";
+
+let initPromise: Promise<void> | null = null;
 let fontRegular: ArrayBuffer | null = null;
 let fontBold: ArrayBuffer | null = null;
 
-async function init() {
-	if (resvgReady && fontRegular && fontBold) return;
-
-	const assetsDir = join(import.meta.dir, "../assets");
-	const [wasmBuf, reg, bold] = await Promise.all([
-		readFile(
-			join(
-				import.meta.dir,
-				"../../node_modules/@resvg/resvg-wasm/index_bg.wasm",
-			),
-		),
-		readFile(join(assetsDir, "Inter-Regular.ttf")),
-		readFile(join(assetsDir, "Inter-Bold.ttf")),
-	]);
-
-	if (!resvgReady) {
-		await initWasm(wasmBuf.buffer as ArrayBuffer);
-		resvgReady = true;
+async function fetchBytes(url: string): Promise<ArrayBuffer> {
+	const res = await fetch(url);
+	if (!res.ok) {
+		throw new Error(`Failed to fetch ${url}: ${res.status}`);
 	}
-	fontRegular = reg.buffer as ArrayBuffer;
-	fontBold = bold.buffer as ArrayBuffer;
+	return res.arrayBuffer();
+}
+
+function init(): Promise<void> {
+	if (initPromise) return initPromise;
+	initPromise = (async () => {
+		const [wasm, reg, bold] = await Promise.all([
+			fetchBytes(RESVG_WASM_URL),
+			fetchBytes(INTER_REGULAR_URL),
+			fetchBytes(INTER_BOLD_URL),
+		]);
+		await initWasm(wasm);
+		fontRegular = reg;
+		fontBold = bold;
+	})();
+	return initPromise;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
