@@ -7,14 +7,12 @@ import { loadOrgCredentials } from "../src/auth/credentials.ts";
 import type { AuthDB } from "../src/auth/db.ts";
 import { resolveOrg } from "../src/auth/resolve-org.ts";
 import type { KVStore } from "../src/cache/interface.ts";
+import ogDefaultPngAsset from "./assets/og-default.png";
 import { renderLoginPage } from "./lib/login-page.ts";
-import { generateOgImage } from "./lib/og-image.tsx";
 import {
 	getScreenshot,
 	loadDiagnostic,
-	loadOgImage,
 	loadPublicShare,
-	saveOgImage,
 } from "./lib/storage.ts";
 import { prompts } from "./prompts/index.ts";
 import { createDiagnoseAppResource } from "./resources/diagnose.ts";
@@ -34,6 +32,20 @@ function escapeAttr(s: string): string {
 		.replace(/"/g, "&quot;")
 		.replace(/</g, "&lt;")
 		.replace(/>/g, "&gt;");
+}
+
+// Resolve the default OG asset to bytes regardless of how the bundler exposes
+// it. Cloudflare Workers' Data rule yields an ArrayBuffer; Bun (local dev,
+// without bundling) yields the file path as a string — read it in that case.
+async function loadOgDefaultPng(): Promise<Uint8Array> {
+	const asset = ogDefaultPngAsset as unknown;
+	if (asset instanceof Uint8Array) return asset;
+	if (asset instanceof ArrayBuffer) return new Uint8Array(asset);
+	if (typeof asset === "string") {
+		const bytes = await readFile(asset);
+		return new Uint8Array(bytes);
+	}
+	throw new Error("og-default.png: unsupported asset type");
 }
 
 export interface AppConfig {
@@ -372,7 +384,10 @@ export function createApp(config: AppConfig = {}) {
 						);
 				const canonicalUrl = `${url.origin}/d/${token}`;
 
-				const ogImageUrl = `${url.origin}/og/${token}.png`;
+				const ogImageUrl = `${url.origin}/og-default.png`;
+				const pageImageAlt = escapeAttr(
+					`Site Diagnostics report preview for ${diagDomain}`,
+				);
 				const seoTags = [
 					`<title>${pageTitle}</title>`,
 					`<meta name="description" content="${pageDesc}" />`,
@@ -381,12 +396,16 @@ export function createApp(config: AppConfig = {}) {
 					`<meta property="og:url" content="${canonicalUrl}" />`,
 					`<meta property="og:type" content="website" />`,
 					`<meta property="og:image" content="${ogImageUrl}" />`,
+					`<meta property="og:image:secure_url" content="${ogImageUrl}" />`,
+					`<meta property="og:image:type" content="image/png" />`,
 					`<meta property="og:image:width" content="1200" />`,
 					`<meta property="og:image:height" content="630" />`,
+					`<meta property="og:image:alt" content="${pageImageAlt}" />`,
 					`<meta name="twitter:card" content="summary_large_image" />`,
 					`<meta name="twitter:title" content="${pageTitle}" />`,
 					`<meta name="twitter:description" content="${pageDesc}" />`,
 					`<meta name="twitter:image" content="${ogImageUrl}" />`,
+					`<meta name="twitter:image:alt" content="${pageImageAlt}" />`,
 					`<link rel="canonical" href="${canonicalUrl}" />`,
 					`<link rel="icon" href="https://www.google.com/s2/favicons?domain=${diagDomain}&sz=64" />`,
 				].join("\n\t\t");
@@ -403,12 +422,18 @@ export function createApp(config: AppConfig = {}) {
 					.replace(/<meta\s+name=["']description["'][^>]*\/?>\s*/gi, "")
 					.replace(/<meta\s+property=["']og:[^"']+["'][^>]*\/?>\s*/gi, "")
 					.replace(/<meta\s+name=["']twitter:[^"']+["'][^>]*\/?>\s*/gi, "");
-				const withPayload = stripped.includes("</head>")
-					? stripped.replace(
-							"</head>",
-							`\t\t${seoTags}\n\t\t${injected}\n\t</head>`,
-						)
-					: `${injected}${stripped}`;
+				// Inject SEO tags at the START of <head>. WhatsApp's crawler
+				// reads only ~300 KB before giving up, and the inlined CSS/JS
+				// bundle in this single-file build would otherwise push the
+				// meta past that cutoff — making the share render as a bare
+				// URL with no preview.
+				const withSeo = stripped.replace(
+					/<head([^>]*)>/i,
+					`<head$1>\n\t\t${seoTags}`,
+				);
+				const withPayload = withSeo.includes("</head>")
+					? withSeo.replace("</head>", `\t\t${injected}\n\t</head>`)
+					: `${injected}${withSeo}`;
 				return new Response(withPayload, {
 					headers: {
 						"content-type": "text/html; charset=utf-8",
@@ -417,61 +442,41 @@ export function createApp(config: AppConfig = {}) {
 				});
 			}
 
-			// OG image: /og/{token}.png — generated on first request, cached in R2
-			if (url.pathname.startsWith("/og/") && req.method === "GET") {
-				const ogToken = url.pathname.slice("/og/".length).replace(/\.png$/, "");
-				if (!/^[A-Za-z0-9_-]{16,64}$/.test(ogToken)) {
-					return new Response("Not Found", { status: 404 });
-				}
-
-				// Serve from R2 cache if already generated
-				const cached = await loadOgImage(ogToken).catch(() => null);
-				if (cached) {
-					return new Response(cached, {
+			// Static default OG card — pre-rendered at build time via
+			// scripts/generate-default-og.ts and bundled with the worker. We
+			// can't generate per-diagnostic cards on Cloudflare Workers because
+			// Satori bundles yoga-layout (Emscripten WASM) and tries to
+			// `WebAssembly.instantiate(bytes)`, which Workers forbids ("Wasm
+			// code generation disallowed by embedder").
+			if (
+				url.pathname === "/og-default.png" &&
+				(req.method === "GET" || req.method === "HEAD")
+			) {
+				const bytes = await loadOgDefaultPng();
+				// HEAD responses must not include a body — return null but keep
+				// the same headers so crawlers that pre-flight with HEAD get
+				// content-type and cache-control.
+				return new Response(
+					req.method === "HEAD" ? null : (bytes as BodyInit),
+					{
 						headers: {
 							"content-type": "image/png",
+							"content-length": String(bytes.byteLength),
 							"cache-control": "public, max-age=31536000, immutable",
 						},
-					});
-				}
-
-				// Resolve the share → diagnostic
-				const ogShare = await loadPublicShare(ogToken).catch(() => null);
-				if (!ogShare) {
-					return new Response("Not Found", { status: 404 });
-				}
-				const ogDiagnostic = await loadDiagnostic(
-					ogShare.diagnosticId,
-					ogShare.orgId,
-				).catch(() => null);
-				if (!ogDiagnostic) {
-					return new Response("Not Found", { status: 404 });
-				}
-
-				let png: Uint8Array;
-				try {
-					png = await generateOgImage(ogDiagnostic);
-				} catch (err) {
-					const msg = err instanceof Error ? err.message : String(err);
-					const stack = err instanceof Error ? err.stack : undefined;
-					console.error("[og-image] generation failed:", msg, stack);
-					// Surface the error in the response body so it's visible without
-					// needing wrangler tail. Safe to expose — no secrets here.
-					return new Response(
-						`Failed to generate image: ${msg}\n\n${stack ?? ""}`,
-						{
-							status: 500,
-							headers: { "content-type": "text/plain; charset=utf-8" },
-						},
-					);
-				}
-				// Cache in R2 (fire-and-forget — don't block the response)
-				saveOgImage(ogToken, png).catch(() => {});
-				return new Response(new Uint8Array(png), {
-					headers: {
-						"content-type": "image/png",
-						"cache-control": "public, max-age=31536000, immutable",
 					},
+				);
+			}
+
+			// Legacy /og/{token}.png — point at the static card so any links
+			// that social-card scrapers cached before this change keep working.
+			if (
+				url.pathname.startsWith("/og/") &&
+				(req.method === "GET" || req.method === "HEAD")
+			) {
+				return new Response(null, {
+					status: 302,
+					headers: { location: "/og-default.png" },
 				});
 			}
 
