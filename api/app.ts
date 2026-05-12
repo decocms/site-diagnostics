@@ -395,18 +395,20 @@ export function createApp(config: AppConfig = {}) {
 				// Escape `<` so `</script>` in report markdown can't break out.
 				const payload = JSON.stringify(diagnostic).replace(/</g, "\\u003c");
 				const injected = `<script>window.__PUBLIC_DIAGNOSTIC__=${payload};</script>`;
-				// Replace generic title then inject SEO tags + payload before </head>.
-				const htmlWithTitle = html.replace(
-					/<title>[^<]*<\/title>/,
-					`<title>${pageTitle}</title>`,
-				);
-				const base = htmlWithTitle.includes("<title>") ? htmlWithTitle : html;
-				const withPayload = base.includes("</head>")
-					? base.replace(
+				// Strip the static SEO tags from index.html so crawlers (which
+				// pick the first occurrence) don't read the generic defaults
+				// instead of our dynamic ones.
+				const stripped = html
+					.replace(/<title>[^<]*<\/title>\s*/i, "")
+					.replace(/<meta\s+name=["']description["'][^>]*\/?>\s*/gi, "")
+					.replace(/<meta\s+property=["']og:[^"']+["'][^>]*\/?>\s*/gi, "")
+					.replace(/<meta\s+name=["']twitter:[^"']+["'][^>]*\/?>\s*/gi, "");
+				const withPayload = stripped.includes("</head>")
+					? stripped.replace(
 							"</head>",
 							`\t\t${seoTags}\n\t\t${injected}\n\t</head>`,
 						)
-					: `${injected}${base}`;
+					: `${injected}${stripped}`;
 				return new Response(withPayload, {
 					headers: {
 						"content-type": "text/html; charset=utf-8",
