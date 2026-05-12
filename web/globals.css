@@ -253,6 +253,8 @@
 	font-size: 0.9375rem;
 	line-height: 1.8;
 	letter-spacing: -0.005em;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 
 /* Headings — lighter weight, clear hierarchy */

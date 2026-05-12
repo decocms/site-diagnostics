@@ -196,6 +196,47 @@ export async function loadPublicShare(
 	return share;
 }
 
+// ---------------------------------------------------------------------------
+// OG image cache
+// ---------------------------------------------------------------------------
+
+export async function saveOgImage(
+	token: string,
+	png: Uint8Array,
+): Promise<void> {
+	await getClient().send(
+		new PutObjectCommand({
+			Bucket: getBucket(),
+			Key: `og-images/${token}.png`,
+			Body: png,
+			ContentType: "image/png",
+			CacheControl: "public, max-age=31536000, immutable",
+		}),
+	);
+}
+
+export async function loadOgImage(
+	token: string,
+): Promise<ReadableStream | null> {
+	try {
+		const res = await getClient().send(
+			new GetObjectCommand({
+				Bucket: getBucket(),
+				Key: `og-images/${token}.png`,
+			}),
+		);
+		return (res.Body?.transformToWebStream() as ReadableStream) ?? null;
+	} catch (err: unknown) {
+		if (
+			err instanceof Error &&
+			(err.name === "NoSuchKey" || err.name === "NotFound")
+		) {
+			return null;
+		}
+		throw err;
+	}
+}
+
 export async function deletePublicShare(token: string): Promise<void> {
 	await getClient().send(
 		new DeleteObjectCommand({
