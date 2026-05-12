@@ -3,24 +3,30 @@ import satori from "satori";
 import type { Diagnostic } from "../types/diagnostic.ts";
 
 // ── Singletons initialised once per process ──────────────────────────────────
-// Fetched from CDN once and held in memory. Works in both Bun (local dev) and
-// Cloudflare Workers (production) — no filesystem required.
+// Fetched from CDN once and held in memory. jsDelivr is used for both the WASM
+// and the fonts because it serves binary assets reliably with the correct
+// content-type and no redirects (GitHub raw URLs 302 to githubusercontent.com,
+// which has historically caused issues on Cloudflare Workers).
 
 const RESVG_WASM_URL =
-	"https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm";
+	"https://cdn.jsdelivr.net/npm/@resvg/resvg-wasm@2.6.2/index_bg.wasm";
 const INTER_REGULAR_URL =
-	"https://github.com/rsms/inter/raw/v4.0/extras/ttf/Inter-Regular.ttf";
+	"https://cdn.jsdelivr.net/gh/rsms/inter@v4.0/extras/ttf/Inter-Regular.ttf";
 const INTER_BOLD_URL =
-	"https://github.com/rsms/inter/raw/v4.0/extras/ttf/Inter-Bold.ttf";
+	"https://cdn.jsdelivr.net/gh/rsms/inter@v4.0/extras/ttf/Inter-Bold.ttf";
 
 let initPromise: Promise<void> | null = null;
 let fontRegular: ArrayBuffer | null = null;
 let fontBold: ArrayBuffer | null = null;
 
-async function fetchBytes(url: string): Promise<ArrayBuffer> {
-	const res = await fetch(url);
+async function fetchBytes(url: string, label: string): Promise<ArrayBuffer> {
+	const res = await fetch(url).catch((err: unknown) => {
+		throw new Error(
+			`[${label}] network fetch failed: ${err instanceof Error ? err.message : String(err)}`,
+		);
+	});
 	if (!res.ok) {
-		throw new Error(`Failed to fetch ${url}: ${res.status}`);
+		throw new Error(`[${label}] HTTP ${res.status} from ${url}`);
 	}
 	return res.arrayBuffer();
 }
@@ -28,14 +34,25 @@ async function fetchBytes(url: string): Promise<ArrayBuffer> {
 function init(): Promise<void> {
 	if (initPromise) return initPromise;
 	initPromise = (async () => {
-		const [wasm, reg, bold] = await Promise.all([
-			fetchBytes(RESVG_WASM_URL),
-			fetchBytes(INTER_REGULAR_URL),
-			fetchBytes(INTER_BOLD_URL),
-		]);
-		await initWasm(wasm);
-		fontRegular = reg;
-		fontBold = bold;
+		try {
+			const [wasm, reg, bold] = await Promise.all([
+				fetchBytes(RESVG_WASM_URL, "resvg-wasm"),
+				fetchBytes(INTER_REGULAR_URL, "inter-regular"),
+				fetchBytes(INTER_BOLD_URL, "inter-bold"),
+			]);
+			await initWasm(wasm).catch((err: unknown) => {
+				throw new Error(
+					`[initWasm] failed: ${err instanceof Error ? err.message : String(err)}`,
+				);
+			});
+			fontRegular = reg;
+			fontBold = bold;
+		} catch (err) {
+			// Reset so a future request can retry instead of being stuck on a
+			// poisoned promise.
+			initPromise = null;
+			throw err;
+		}
 	})();
 	return initPromise;
 }

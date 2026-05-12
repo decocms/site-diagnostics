@@ -452,8 +452,18 @@ export function createApp(config: AppConfig = {}) {
 				try {
 					png = await generateOgImage(ogDiagnostic);
 				} catch (err) {
-					console.error("[og-image] generation failed:", err);
-					return new Response("Failed to generate image", { status: 500 });
+					const msg = err instanceof Error ? err.message : String(err);
+					const stack = err instanceof Error ? err.stack : undefined;
+					console.error("[og-image] generation failed:", msg, stack);
+					// Surface the error in the response body so it's visible without
+					// needing wrangler tail. Safe to expose — no secrets here.
+					return new Response(
+						`Failed to generate image: ${msg}\n\n${stack ?? ""}`,
+						{
+							status: 500,
+							headers: { "content-type": "text/plain; charset=utf-8" },
+						},
+					);
 				}
 				// Cache in R2 (fire-and-forget — don't block the response)
 				saveOgImage(ogToken, png).catch(() => {});
