@@ -9,10 +9,13 @@ import { resolveOrg } from "../src/auth/resolve-org.ts";
 import type { KVStore } from "../src/cache/interface.ts";
 import ogDefaultPngAsset from "./assets/og-default.png";
 import { renderLoginPage } from "./lib/login-page.ts";
+import { generateOgCard } from "./lib/og-card.ts";
 import {
 	getScreenshot,
 	loadDiagnostic,
+	loadOgImage,
 	loadPublicShare,
+	saveOgImage,
 } from "./lib/storage.ts";
 import { prompts } from "./prompts/index.ts";
 import { createDiagnoseAppResource } from "./resources/diagnose.ts";
@@ -384,7 +387,7 @@ export function createApp(config: AppConfig = {}) {
 						);
 				const canonicalUrl = `${url.origin}/d/${token}`;
 
-				const ogImageUrl = `${url.origin}/og-default.png`;
+				const ogImageUrl = `${url.origin}/og/${token}.png`;
 				const pageImageAlt = escapeAttr(
 					`Site Diagnostics report preview for ${diagDomain}`,
 				);
@@ -468,15 +471,74 @@ export function createApp(config: AppConfig = {}) {
 				);
 			}
 
-			// Legacy /og/{token}.png — point at the static card so any links
-			// that social-card scrapers cached before this change keep working.
+			// Per-diagnostic OG card: /og/{token}.png — rendered on first hit,
+			// cached in R2 for subsequent hits. On any miss (bad token, share
+			// gone, render failure) we 302 to /og-default.png so crawlers
+			// always get a valid image.
 			if (
 				url.pathname.startsWith("/og/") &&
 				(req.method === "GET" || req.method === "HEAD")
 			) {
-				return new Response(null, {
-					status: 302,
-					headers: { location: "/og-default.png" },
+				const m = url.pathname.match(/^\/og\/([A-Za-z0-9_-]{16,64})\.png$/);
+				if (!m) {
+					return new Response(null, {
+						status: 302,
+						headers: { location: "/og-default.png" },
+					});
+				}
+				const ogToken = m[1];
+
+				const cached = await loadOgImage(ogToken).catch(() => null);
+				if (cached) {
+					return new Response(cached, {
+						headers: {
+							"content-type": "image/png",
+							"cache-control": "public, max-age=31536000, immutable",
+						},
+					});
+				}
+
+				const ogShare = await loadPublicShare(ogToken).catch(() => null);
+				if (!ogShare) {
+					return new Response(null, {
+						status: 302,
+						headers: { location: "/og-default.png" },
+					});
+				}
+				const ogDiagnostic = await loadDiagnostic(
+					ogShare.diagnosticId,
+					ogShare.orgId,
+				).catch(() => null);
+				if (!ogDiagnostic) {
+					return new Response(null, {
+						status: 302,
+						headers: { location: "/og-default.png" },
+					});
+				}
+
+				let png: Uint8Array;
+				try {
+					png = await generateOgCard(ogDiagnostic);
+				} catch (err) {
+					console.error("[og-card] render failed:", err);
+					return new Response(null, {
+						status: 302,
+						headers: { location: "/og-default.png" },
+					});
+				}
+
+				// Fire-and-forget R2 write. If it fails the next request just
+				// regenerates — no correctness impact.
+				saveOgImage(ogToken, png).catch((err) => {
+					console.error("[og-card] cache write failed:", err);
+				});
+
+				return new Response(req.method === "HEAD" ? null : (png as BodyInit), {
+					headers: {
+						"content-type": "image/png",
+						"content-length": String(png.byteLength),
+						"cache-control": "public, max-age=31536000, immutable",
+					},
 				});
 			}
 
