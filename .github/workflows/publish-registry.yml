@@ -1,4 +1,4 @@
-name: Deploy (Production)
+name: Publish to Registry
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  deploy:
+  publish:
     runs-on: ubuntu-latest
 
     steps:
@@ -44,8 +44,8 @@ jobs:
 
       - name: Notify success
         if: success()
-        run: echo "Successfully deployed site-diagnostics to production"
+        run: echo "Successfully published site-diagnostics to registry"
 
       - name: Notify failure
         if: failure()
-        run: echo "Deployment failed for site-diagnostics"
+        run: echo "Registry publish failed for site-diagnostics"
