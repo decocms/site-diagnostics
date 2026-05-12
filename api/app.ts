@@ -8,10 +8,13 @@ import type { AuthDB } from "../src/auth/db.ts";
 import { resolveOrg } from "../src/auth/resolve-org.ts";
 import type { KVStore } from "../src/cache/interface.ts";
 import { renderLoginPage } from "./lib/login-page.ts";
+import { generateOgImage } from "./lib/og-image.tsx";
 import {
 	getScreenshot,
 	loadDiagnostic,
+	loadOgImage,
 	loadPublicShare,
+	saveOgImage,
 } from "./lib/storage.ts";
 import { prompts } from "./prompts/index.ts";
 import { createDiagnoseAppResource } from "./resources/diagnose.ts";
@@ -24,6 +27,14 @@ import { type Env, StateSchema } from "./types/env.ts";
 
 // biome-ignore lint/suspicious/noExplicitAny: runtime.fetch signature compatibility
 type Fetcher = (req: Request, ...args: any[]) => Response | Promise<Response>;
+
+function escapeAttr(s: string): string {
+	return s
+		.replace(/&/g, "&amp;")
+		.replace(/"/g, "&quot;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;");
+}
 
 export interface AppConfig {
 	/** Static HTML string (used by Workers). Omit for local dev to read from disk on each request. */
@@ -344,17 +355,110 @@ export function createApp(config: AppConfig = {}) {
 					});
 				}
 
+				const diagDomain = (() => {
+					try {
+						return new URL(diagnostic.url).hostname.replace(/^www\./, "");
+					} catch {
+						return diagnostic.url;
+					}
+				})();
+				const pageTitle = escapeAttr(
+					`${diagnostic.title || diagDomain} — Site Diagnostics`,
+				);
+				const pageDesc = diagnostic.summary
+					? escapeAttr(diagnostic.summary.slice(0, 155))
+					: escapeAttr(
+							`Performance & SEO diagnostic for ${diagDomain}. Health score: ${diagnostic.healthScore ?? "N/A"}/100.`,
+						);
+				const canonicalUrl = `${url.origin}/d/${token}`;
+
+				const ogImageUrl = `${url.origin}/og/${token}.png`;
+				const seoTags = [
+					`<title>${pageTitle}</title>`,
+					`<meta name="description" content="${pageDesc}" />`,
+					`<meta property="og:title" content="${pageTitle}" />`,
+					`<meta property="og:description" content="${pageDesc}" />`,
+					`<meta property="og:url" content="${canonicalUrl}" />`,
+					`<meta property="og:type" content="website" />`,
+					`<meta property="og:image" content="${ogImageUrl}" />`,
+					`<meta property="og:image:width" content="1200" />`,
+					`<meta property="og:image:height" content="630" />`,
+					`<meta name="twitter:card" content="summary_large_image" />`,
+					`<meta name="twitter:title" content="${pageTitle}" />`,
+					`<meta name="twitter:description" content="${pageDesc}" />`,
+					`<meta name="twitter:image" content="${ogImageUrl}" />`,
+					`<link rel="canonical" href="${canonicalUrl}" />`,
+					`<link rel="icon" href="https://www.google.com/s2/favicons?domain=${diagDomain}&sz=64" />`,
+				].join("\n\t\t");
+
 				const html = await getClientHTML();
 				// Escape `<` so `</script>` in report markdown can't break out.
 				const payload = JSON.stringify(diagnostic).replace(/</g, "\\u003c");
 				const injected = `<script>window.__PUBLIC_DIAGNOSTIC__=${payload};</script>`;
-				const withPayload = html.includes("</head>")
-					? html.replace("</head>", `${injected}</head>`)
-					: `${injected}${html}`;
+				// Replace generic title then inject SEO tags + payload before </head>.
+				const htmlWithTitle = html.replace(
+					/<title>[^<]*<\/title>/,
+					`<title>${pageTitle}</title>`,
+				);
+				const base = htmlWithTitle.includes("<title>") ? htmlWithTitle : html;
+				const withPayload = base.includes("</head>")
+					? base.replace(
+							"</head>",
+							`\t\t${seoTags}\n\t\t${injected}\n\t</head>`,
+						)
+					: `${injected}${base}`;
 				return new Response(withPayload, {
 					headers: {
 						"content-type": "text/html; charset=utf-8",
 						"cache-control": "no-store",
+					},
+				});
+			}
+
+			// OG image: /og/{token}.png — generated on first request, cached in R2
+			if (url.pathname.startsWith("/og/") && req.method === "GET") {
+				const ogToken = url.pathname.slice("/og/".length).replace(/\.png$/, "");
+				if (!/^[A-Za-z0-9_-]{16,64}$/.test(ogToken)) {
+					return new Response("Not Found", { status: 404 });
+				}
+
+				// Serve from R2 cache if already generated
+				const cached = await loadOgImage(ogToken).catch(() => null);
+				if (cached) {
+					return new Response(cached, {
+						headers: {
+							"content-type": "image/png",
+							"cache-control": "public, max-age=31536000, immutable",
+						},
+					});
+				}
+
+				// Resolve the share → diagnostic
+				const ogShare = await loadPublicShare(ogToken).catch(() => null);
+				if (!ogShare) {
+					return new Response("Not Found", { status: 404 });
+				}
+				const ogDiagnostic = await loadDiagnostic(
+					ogShare.diagnosticId,
+					ogShare.orgId,
+				).catch(() => null);
+				if (!ogDiagnostic) {
+					return new Response("Not Found", { status: 404 });
+				}
+
+				let png: Uint8Array;
+				try {
+					png = await generateOgImage(ogDiagnostic);
+				} catch (err) {
+					console.error("[og-image] generation failed:", err);
+					return new Response("Failed to generate image", { status: 500 });
+				}
+				// Cache in R2 (fire-and-forget — don't block the response)
+				saveOgImage(ogToken, png).catch(() => {});
+				return new Response(new Uint8Array(png), {
+					headers: {
+						"content-type": "image/png",
+						"cache-control": "public, max-age=31536000, immutable",
 					},
 				});
 			}

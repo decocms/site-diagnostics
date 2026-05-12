@@ -21,12 +21,6 @@ function getScoreColor(score: number): string {
 	return "text-destructive";
 }
 
-function getScoreRingClass(score: number): string {
-	if (score >= 80) return "stroke-success";
-	if (score >= 50) return "stroke-warning";
-	return "stroke-destructive";
-}
-
 function getDomain(url: string): string {
 	try {
 		return new URL(url).hostname.replace(/^www\./, "");
@@ -35,76 +29,29 @@ function getDomain(url: string): string {
 	}
 }
 
-/** Clean score ring — no colored background, no verdict label */
 function ScoreCard({ score, summary }: { score: number; summary?: string }) {
-	const radius = 40;
-	const circumference = 2 * Math.PI * radius;
-	const [drawn, setDrawn] = useState(false);
-
-	useEffect(() => {
-		const t = setTimeout(() => setDrawn(true), 120);
-		return () => clearTimeout(t);
-	}, []);
-
-	const offset = drawn
-		? circumference - (score / 100) * circumference
-		: circumference;
-
 	return (
 		<div className="rounded-xl border border-border p-5 mb-8">
-			<div className="flex items-center gap-5">
-				{/* Score ring */}
-				<div className="relative inline-flex items-center justify-center shrink-0">
-					<svg
-						width="96"
-						height="96"
-						viewBox="0 0 96 96"
-						className="-rotate-90"
-						role="img"
-						aria-label={`Health score: ${score} out of 100`}
-					>
-						<circle
-							cx="48"
-							cy="48"
-							r={radius}
-							fill="none"
-							strokeWidth="5"
-							className="stroke-foreground/[0.07]"
-						/>
-						<circle
-							cx="48"
-							cy="48"
-							r={radius}
-							fill="none"
-							strokeWidth="5"
-							strokeLinecap="round"
-							strokeDasharray={circumference}
-							strokeDashoffset={offset}
-							className={getScoreRingClass(score)}
-							style={{
-								transition:
-									"stroke-dashoffset 1.1s cubic-bezier(0.19, 1, 0.22, 1)",
-							}}
-						/>
-					</svg>
-					<div className="absolute inset-0 flex flex-col items-center justify-center">
-						<span
-							className={`text-2xl font-bold tabular-nums leading-none tracking-tight ${getScoreColor(score)}`}
-						>
-							{score}
-						</span>
-						<span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-[0.1em] mt-0.5">
-							/100
-						</span>
-					</div>
-				</div>
-
-				{/* Summary — no verdict label */}
+			<div className="flex items-start gap-4">
 				{summary && (
-					<p className="text-sm text-muted-foreground leading-relaxed flex-1">
+					<p className="text-sm text-muted-foreground leading-relaxed flex-1 min-w-0">
 						{summary}
 					</p>
 				)}
+				<div
+					className="shrink-0 text-right"
+					role="img"
+					aria-label={`Health score: ${score} out of 100`}
+				>
+					<div
+						className={`text-3xl font-bold tabular-nums leading-none tracking-tight ${getScoreColor(score)}`}
+					>
+						{score}
+					</div>
+					<div className="text-[9px] font-semibold text-muted-foreground uppercase tracking-[0.1em] mt-0.5">
+						/100
+					</div>
+				</div>
 			</div>
 		</div>
 	);
@@ -302,7 +249,7 @@ export function ReportView({ diagnostic, onBack, onShare }: ReportViewProps) {
 						/>
 						<div className="flex-1 min-w-0">
 							{/* Use <div> not <h1> — CSS hides first h1 in prose for dedup */}
-							<div className="text-2xl font-bold tracking-tight leading-snug mb-1.5">
+							<div className="text-xl sm:text-2xl font-bold tracking-tight leading-snug mb-1.5">
 								{diagnostic.title || domain}
 							</div>
 							<a
@@ -311,7 +258,9 @@ export function ReportView({ diagnostic, onBack, onShare }: ReportViewProps) {
 								rel="noopener noreferrer"
 								className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors duration-150 group"
 							>
-								<span className="truncate max-w-[340px]">{diagnostic.url}</span>
+								<span className="truncate max-w-[200px] sm:max-w-[340px]">
+									{diagnostic.url}
+								</span>
 								<ExternalLink className="size-3 shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
 							</a>
 							<p className="text-xs text-muted-foreground/50 mt-1">{date}</p>
@@ -328,7 +277,18 @@ export function ReportView({ diagnostic, onBack, onShare }: ReportViewProps) {
 				)}
 
 				{/* ── Markdown report ─────────────────────────────────── */}
-				<Markdown remarkPlugins={[remarkGfm]}>{diagnostic.report}</Markdown>
+				<Markdown
+					remarkPlugins={[remarkGfm]}
+					components={{
+						table: ({ children }) => (
+							<div className="overflow-x-auto">
+								<table>{children}</table>
+							</div>
+						),
+					}}
+				>
+					{diagnostic.report}
+				</Markdown>
 
 				{/* Footnote hover tooltip */}
 				{tooltip && (
