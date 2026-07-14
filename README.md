@@ -1,3 +1,14 @@
+# Archived
+
+Deprecated in favor of https://www.decocms.com/diagnostico
+
+
+---
+
+---
+
+---
+
 # Site Diagnostics
 
 Blackbox performance and SEO diagnostics for storefronts and high-traffic websites, built as an MCP App on deco.
