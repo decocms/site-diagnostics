@@ -1,0 +1,11 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+archive = "rm -rf node_modules"
+setup = "bun install"
+
+[scripts.run.run]
+available_in = "local"
+command = "bun run dev:conductor"
+default = true
+icon = "play"
