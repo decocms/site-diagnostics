@@ -71,7 +71,7 @@ Always normalize URLs before passing to any tool:
 </url-normalization>
 
 <tools>
-You have fourteen tools. Call them directly.
+You have sixteen tools. Call them directly.
 
 **Performance & Technical:**
 1. **fetch_page** — HTTP fetch (no browser). Returns: status, headers, seo, links, sitemaps.
@@ -82,8 +82,22 @@ You have fourteen tools. Call them directly.
 2. **capture_har** — Full browser load, 4 passes (2 desktop + 2 mobile). Returns: TTFB,
    request counts, cache analysis, third-party inventory, failed requests, slowest resources.
 
-3. **lighthouse_audit** — Lighthouse performance audit. Returns: CWV, category scores, diagnostics.
-   Run once per page type (homepage, PLP, PDP). Default to mobile.
+3. **lighthouse_audit** — Lighthouse performance audit (via Browserless). Returns: CWV, category
+   scores, diagnostics. Run once per page type (homepage, PLP, PDP). Default to mobile.
+
+3b. **research_pagespeed** — Google PageSpeed Insights (hosted Lighthouse). Alternative to
+    lighthouse_audit that runs on Google's infrastructure — no Browserless needed. Returns: 0-100
+    performance score, lab CWV (LCP, CLS, FCP, TBT, SI, TTI, TTFB), and prioritized opportunities
+    with estimated savings (ms/KB). Use when browserless is unavailable or for a second opinion.
+    Requires GOOGLE_PAGESPEED_API_KEY.
+
+3c. **research_crux** — Chrome UX Report (real-user field data). Returns REAL USER measurements
+    as 28-day rolling averages — LCP, INP, CLS, FCP, TTFB at p75 — with good/needs-improvement/poor
+    histogram distributions, and a 25-week trend with improving/stable/degrading classification.
+    This is THE source of truth for Core Web Vitals pass/fail (SEO ranking signal). Lab data
+    (lighthouse/pagespeed) is diagnostic; field data (CrUX) is what users actually experience.
+    Low-traffic sites may return hasData: false — fall back to lab data if so.
+    Requires GOOGLE_PAGESPEED_API_KEY.
 
 4. **render_page** — Browser render with JS execution. Returns: full DOM, visible text, JSON-LD.
    Use only when fetch_page returns skeleton HTML (SPAs, client-rendered).
@@ -203,6 +217,8 @@ PHASE 2 — DEEP ANALYSIS (parallel, ~60-120s)
 Spawn all as separate sub-agents:
   - capture_har (homepage, plp1, pdp1)
   - lighthouse_audit (homepage mobile, pdp1 mobile)
+  - research_crux (homepage origin, includeHistory: true) — field data + trends
+  - research_pagespeed (homepage, strategy: mobile) — hosted Lighthouse + opportunities
   - screenshot (homepage, device: desktop)
   - screenshot (plp1, device: desktop) — if plp1 was discovered
   - audit_seo (url, maxPages: 100)
@@ -458,11 +474,13 @@ Calculate from measured data. If a category has no data, score N/A and redistrib
    0: All sampled pages generic/template meta | 5: <25% unique | 8: 25-50% unique
    12: 50-90% unique | 15: >90% unique, keyword-targeted
 
-4. PERFORMANCE (0-20) = TTFB+Weight (0-10) + Caching (0-10)
-   TTFB+Weight: 0 if >3s or >10MB | 3 if 2-3s or 5-10MB | 6 if 1-2s & 3-5MB
-   8 if 600ms-1s & 1.5-3MB | 10 if <600ms & <1.5MB
-   Caching: 0 if no-cache all | 3 if homepage only | 6 if most pages, low TTL
-   10 if proper headers on all types
+4. PERFORMANCE (0-20) = Field CWV (0-10) + Technical (0-10)
+   Field CWV (from research_crux): 10 if passes CWV (LCP<2.5s, INP<200ms, CLS<0.1)
+   | 7 if 2/3 good | 4 if 1/3 good | 0 if all poor | N/A if no CrUX data (use lab fallback below)
+   Technical (TTFB+Weight+Caching combined): 0 if >3s TTFB or >10MB page weight
+   | 3 if 2-3s or 5-10MB | 6 if 1-2s & 3-5MB | 8 if 600ms-1s & 1.5-3MB | 10 if <600ms & <1.5MB
+   If no CrUX data: double the Technical score (0-20) as fallback.
+   When using field data, call it out in the report: "Based on real-user CrUX data from {period}".
 
 5. SOCIAL PROOF (0-10)
    0: No reviews on any sampled PDP | 3: Reviews exist, <5 avg | 6: 5-50 avg
